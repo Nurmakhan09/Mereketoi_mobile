@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/Text';
 import { Pill } from '@/components/ui/Pill';
-import { Button } from '@/components/ui/Button';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { GuestGate } from '@/components/GuestGate';
 import { CalendarHeader } from '@/features/calendar/CalendarHeader';
@@ -16,9 +15,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { fetchOwnerCalendar } from '@/services/api/listings';
 import { OwnerCalendar, DayStatus } from '@/types';
-
-/** Launch floor — days before this can't be opened (mirrors CalendarController). */
-const FLOOR_MONTH = '2026-06';
 
 const MONTHS_KK = ['Қаңтар', 'Ақпан', 'Наурыз', 'Сәуір', 'Мамыр', 'Маусым', 'Шілде', 'Тамыз', 'Қыркүйек', 'Қазан', 'Қараша', 'Желтоқсан'];
 const MONTHS_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
@@ -78,6 +74,7 @@ export default function CalendarTab() {
 
   const storeUuid = useMyListingStore((s) => s.uuid);
   const hasPublished = useMyListingStore((s) => s.hasPublished);
+  const loaded = useMyListingStore((s) => s.loaded);
   const refreshMine = useMyListingStore((s) => s.refresh);
 
   const [month, setMonth] = useState<string | undefined>(undefined);
@@ -87,9 +84,10 @@ export default function CalendarTab() {
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    if (!storeUuid) {
-      // No (published) listing → make sure the store is fresh, then show empty state.
-      await refreshMine();
+    // The calendar is for PUBLISHED providers only (mirrors the website). A draft /
+    // missing listing → no fetch; the publish-first empty state shows instead.
+    if (!hasPublished || !storeUuid) {
+      if (!loaded) await refreshMine();
       setLoading(false);
       return;
     }
@@ -139,8 +137,12 @@ export default function CalendarTab() {
     </View>
   );
 
-  // No published listing yet → invite to publish (matches the web empty state).
-  if (!hasPublished && !storeUuid) {
+  // Wait for the one-listing flag to resolve before deciding.
+  if (!loaded && !data) return <Loading />;
+
+  // Calendar is unavailable until the ad is PUBLISHED (mirrors the website: a draft
+  // / missing listing has no calendar). Show a publish-first prompt instead.
+  if (!hasPublished) {
     return (
       <View style={styles.fill}>
         <View style={{ paddingTop: insets.top + Spacing.base }}>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, TextInput, Pressable, Alert, Linking, Share } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/ui/Screen';
@@ -28,6 +28,17 @@ const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля
 const WD_KK = ['Дүйсенбі', 'Сейсенбі', 'Сәрсенбі', 'Бейсенбі', 'Жұма', 'Сенбі', 'Жексенбі'];
 const WD_RU = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
+/** HH:MM time mask — digits only, auto-colon, clamps hours ≤23 and minutes ≤59. */
+function maskTime(v: string): string {
+  const raw = v.replace(/[^0-9]/g, '').slice(0, 4);
+  if (!raw) return '';
+  let h = raw.slice(0, 2);
+  let m = raw.slice(2, 4);
+  if (raw.length >= 2 && parseInt(h, 10) > 23) h = '23';
+  if (raw.length === 4 && parseInt(m, 10) > 59) m = '59';
+  return raw.length <= 2 ? h : `${h}:${m}`;
+}
+
 function shiftDate(date: string, delta: number): string {
   const d = new Date(date + 'T00:00:00');
   d.setDate(d.getDate() + delta);
@@ -42,6 +53,8 @@ export default function CalendarDayScreen() {
   const { t, locale } = useI18n();
 
   const uuid = useMyListingStore((s) => s.uuid);
+  const hasPublished = useMyListingStore((s) => s.hasPublished);
+  const storeLoaded = useMyListingStore((s) => s.loaded);
 
   const [status, setStatus] = useState<DayStatus>('free');
   const [publicNote, setPublicNote] = useState('');
@@ -127,6 +140,8 @@ export default function CalendarDayScreen() {
   const shareInvite = (url: string) => Share.share({ message: url }).catch(() => {});
   const waInvite = (url: string) => Linking.openURL(`https://wa.me/?text=${encodeURIComponent(url)}`).catch(() => {});
 
+  // Day page is for published providers only — bounce to the calendar (publish prompt).
+  if (storeLoaded && !hasPublished) return <Redirect href="/calendar" />;
   if (loading && !day) return <Loading />;
   if (error) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
 
@@ -193,7 +208,7 @@ export default function CalendarDayScreen() {
             <>
               <View style={styles.row2}>
                 <TextInput value={invPrice} onChangeText={(v) => setInvPrice(v.replace(/[^0-9]/g, ''))} placeholder={t.bookingPriceLabel} placeholderTextColor={Colors.textFaint} keyboardType="number-pad" style={[styles.input, styles.flex1]} />
-                <TextInput value={invTime} onChangeText={setInvTime} placeholder="18:00" placeholderTextColor={Colors.textFaint} maxLength={5} style={[styles.input, styles.flex1]} />
+                <TextInput value={invTime} onChangeText={(v) => setInvTime(maskTime(v))} keyboardType="number-pad" placeholder="18:00" placeholderTextColor={Colors.textFaint} maxLength={5} style={[styles.input, styles.flex1]} />
               </View>
               <Button title={t.inviteCreateSubmit} small loading={busy} onPress={onCreateInvite} />
             </>
@@ -308,7 +323,7 @@ function BookingCard({
               <FieldLabel label={t.dealPaid} />
               <TextInput value={cPaid} onChangeText={(v) => setCPaid(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" placeholderTextColor={Colors.textFaint} style={styles.input} />
               <FieldLabel label={t.dealTime} />
-              <TextInput value={cTime} onChangeText={setCTime} placeholder="18:00" placeholderTextColor={Colors.textFaint} maxLength={5} style={styles.input} />
+              <TextInput value={cTime} onChangeText={(v) => setCTime(maskTime(v))} keyboardType="number-pad" placeholder="18:00" placeholderTextColor={Colors.textFaint} maxLength={5} style={styles.input} />
               <FieldLabel label={t.dealAddress} />
               <TextInput value={cAddr} onChangeText={setCAddr} placeholderTextColor={Colors.textFaint} style={styles.input} />
               <Button

@@ -26,6 +26,17 @@ import { WeddingPlan, WeddingPlanResponse, BookingCard } from '@/types';
  * Clickable step dots up top; Back / Next / Save at the bottom. Cost badge = the
  * sum of accepted bookings' agreed prices. Deep-linkable via ?step=N.
  */
+/** HH:MM time mask — digits only, auto-colon, clamps hours ≤23 and minutes ≤59. */
+function maskTime(v: string): string {
+  const raw = v.replace(/[^0-9]/g, '').slice(0, 4);
+  if (!raw) return '';
+  let h = raw.slice(0, 2);
+  let m = raw.slice(2, 4);
+  if (raw.length >= 2 && parseInt(h, 10) > 23) h = '23';
+  if (raw.length === 4 && parseInt(m, 10) > 59) m = '59';
+  return raw.length <= 2 ? h : `${h}:${m}`;
+}
+
 export default function ToiScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
@@ -114,7 +125,7 @@ export default function ToiScreen() {
         <Text variant="h3" color={Colors.text} style={styles.section}>{t.toiStep0Title}</Text>
         <Card padded>
           <FormField label={t.toiMetaDate} value={plan.meta.date} onChangeText={(v) => setMeta({ date: v })} placeholder="2026-08-01" />
-          <FormField label={t.toiMetaTime} value={plan.meta.time} onChangeText={(v) => setMeta({ time: v })} placeholder="18:00" maxLength={5} />
+          <FormField label={t.toiMetaTime} value={plan.meta.time} onChangeText={(v) => setMeta({ time: maskTime(v) })} keyboardType="number-pad" placeholder="18:00" maxLength={5} />
           <SelectField label={t.toiMetaCity} placeholder="—" value={plan.meta.city_id || null} options={cityOptions} onChange={(v) => setMeta({ city_id: Number(v) })} />
           <FormField label={t.toiMetaGuests} value={plan.meta.guests ? String(plan.meta.guests) : ''} onChangeText={(v) => setMeta({ guests: parseInt(v.replace(/[^0-9]/g, ''), 10) || 0 })} keyboardType="number-pad" placeholder="0" />
           <FormField label={t.toiMetaBudget} value={plan.meta.budget ? String(plan.meta.budget) : ''} onChangeText={(v) => setMeta({ budget: parseInt(v.replace(/[^0-9]/g, ''), 10) || 0 })} keyboardType="number-pad" placeholder="0" />
@@ -310,7 +321,7 @@ function BookingCardView({ card, onChanged }: { card: BookingCard; onChanged: ()
               <FormField label={t.toiMetaDate} value={cDate} onChangeText={setCDate} placeholder="2026-08-01" />
               <FormField label={t.dealAgreed} value={cPrice} onChangeText={(v) => setCPrice(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" />
               <FormField label={t.dealPaid} value={cPaid} onChangeText={(v) => setCPaid(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" />
-              <FormField label={t.dealTime} value={cTime} onChangeText={setCTime} placeholder="18:00" maxLength={5} />
+              <FormField label={t.dealTime} value={cTime} onChangeText={(v) => setCTime(maskTime(v))} keyboardType="number-pad" placeholder="18:00" maxLength={5} />
               <FormField label={t.dealAddress} value={cAddr} onChangeText={setCAddr} />
               <Button
                 title={t.changeRequest}

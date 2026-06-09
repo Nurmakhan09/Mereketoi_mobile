@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Linking, Share, Alert, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Linking, Share, Alert, Modal, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +25,7 @@ export default function ListingDetailScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { t, locale } = useI18n();
   const navigation = useNavigation();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const { isAuthed, requireAuth } = useRequireAuth();
   const favoriteIds = useFavoritesStore((s) => s.ids);
   const toggleFav = useFavoritesStore((s) => s.toggle);
@@ -39,6 +39,7 @@ export default function ListingDetailScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null); // full-screen lightbox
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -126,7 +127,9 @@ export default function ListingDetailScreen() {
               }
             >
               {images.map((img, i) => (
-                <Image key={i} source={{ uri: imageUrl(img.path) ?? '' }} style={{ width, height: width * 0.7 }} contentFit="cover" />
+                <Pressable key={i} onPress={() => setViewerIndex(i)}>
+                  <Image source={{ uri: imageUrl(img.path) ?? '' }} style={{ width, height: width * 0.7 }} contentFit="cover" />
+                </Pressable>
               ))}
             </ScrollView>
           ) : (
@@ -145,6 +148,17 @@ export default function ListingDetailScreen() {
             <AvailabilityBadge status={data.today_status} t={t} />
           </View>
         </View>
+
+        {/* Thumbnail strip — tap any (or the main photo) to view full-screen */}
+        {images.length > 1 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbStrip} contentContainerStyle={styles.thumbStripInner}>
+            {images.map((img, i) => (
+              <Pressable key={i} onPress={() => setViewerIndex(i)} style={[styles.thumb, i === activeImg && styles.thumbActive]}>
+                <Image source={{ uri: imageUrl(img.path) ?? '' }} style={styles.thumbImg} contentFit="cover" />
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
 
         <View style={styles.body}>
           <Text variant="h1" color={Colors.text}>
@@ -226,6 +240,22 @@ export default function ListingDetailScreen() {
         defaultSlug={data.category?.slug}
         onBooked={() => {}}
       />
+
+      {/* Full-screen photo viewer (lightbox) — swipe through, contain (no crop) */}
+      <Modal visible={viewerIndex !== null} transparent={false} animationType="fade" onRequestClose={() => setViewerIndex(null)}>
+        <View style={styles.viewer}>
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} contentOffset={{ x: (viewerIndex ?? 0) * width, y: 0 }}>
+            {images.map((img, i) => (
+              <View key={i} style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={{ uri: imageUrl(img.path) ?? '' }} style={{ width, height: height * 0.85 }} contentFit="contain" />
+              </View>
+            ))}
+          </ScrollView>
+          <Pressable style={styles.viewerClose} onPress={() => setViewerIndex(null)} hitSlop={12}>
+            <Ionicons name="close" size={30} color="#fff" />
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -238,6 +268,13 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)', marginHorizontal: 3 },
   dotActive: { backgroundColor: Colors.white, width: 18 },
   badgeOverlay: { position: 'absolute', top: Spacing.md, left: Spacing.md },
+  thumbStrip: { marginTop: Spacing.sm },
+  thumbStripInner: { paddingHorizontal: Spacing.base, gap: Spacing.sm },
+  thumb: { width: 64, height: 64, borderRadius: Radius.sm, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent' },
+  thumbActive: { borderColor: Colors.primary },
+  thumbImg: { width: '100%', height: '100%' },
+  viewer: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
+  viewerClose: { position: 'absolute', top: 48, right: 20, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.4)' },
   body: { padding: Spacing.base },
   price: { marginTop: Spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: Spacing.md, gap: Spacing.sm },

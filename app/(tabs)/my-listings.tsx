@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { Logo } from '@/components/Logo';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { GuestGate } from '@/components/GuestGate';
