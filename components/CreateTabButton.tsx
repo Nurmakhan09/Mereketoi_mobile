@@ -21,15 +21,19 @@ export function CreateTabButton({ onPress }: { onPress?: (e: GestureResponderEve
  */
 export function ListingTabButton({
   label,
+  active = false,
   onPress,
 }: {
   label: string;
+  active?: boolean;
   onPress?: (e: GestureResponderEvent) => void;
 }) {
+  // Match the sibling tabs: navy when active, gold when not.
+  const color = active ? Colors.primary : Colors.secondary;
   return (
     <Pressable onPress={onPress} style={styles.normalWrap} accessibilityRole="button" accessibilityLabel={label}>
-      <Ionicons name="albums-outline" size={24} color={Colors.secondary} />
-      <Text style={styles.normalLabel} color={Colors.secondary}>
+      <Ionicons name={active ? 'albums' : 'albums-outline'} size={24} color={color} />
+      <Text style={styles.normalLabel} color={color}>
         {label}
       </Text>
     </Pressable>
@@ -48,6 +52,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     ...Shadow.md,
   },
-  normalWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 6, gap: 3 },
+  normalWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
   normalLabel: { fontFamily: Fonts.medium, fontSize: 11 },
 });

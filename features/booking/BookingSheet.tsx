@@ -6,7 +6,6 @@ import { Text } from '@/components/ui/Text';
 import { Pill } from '@/components/ui/Pill';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
-import { SelectField } from '@/components/ui/SelectField';
 import { MonthGrid } from '@/features/calendar/MonthGrid';
 import { CalendarHeader } from '@/features/calendar/CalendarHeader';
 import { Colors, Spacing } from '@/constants/theme';
@@ -14,20 +13,19 @@ import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchPublicCalendar } from '@/services/api/listings';
 import { requestBooking } from '@/services/api/bookings';
+import { formatPhoneInput } from '@/utils/format';
 import { CalendarDay, DayStatus } from '@/types';
 
-/** Той-plan slots ↔ category slug (mirror of the web detail `$bookSlots`). */
-const SLOTS: { slug: string; key: string }[] = [
-  { slug: 'oryndar', key: 'venue' },
-  { slug: 'asaba', key: 'tamada' },
-  { slug: 'anshy', key: 'singer' },
-  { slug: 'fotograf', key: 'photographer' },
-  { slug: 'videograf', key: 'videographer' },
-  { slug: 'dj', key: 'dj' },
-  { slug: 'kortezh', key: 'cortege' },
-  { slug: 'dekor', key: 'decor' },
-  { slug: 'toy-koilek', key: 'dress' },
-];
+/** HH:MM time mask — digits only, auto-colon, clamps hours ≤23 and minutes ≤59. */
+function maskTime(v: string): string {
+  const raw = v.replace(/[^0-9]/g, '').slice(0, 4);
+  if (!raw) return '';
+  let h = raw.slice(0, 2);
+  let m = raw.slice(2, 4);
+  if (raw.length >= 2 && parseInt(h, 10) > 23) h = '23';
+  if (raw.length === 4 && parseInt(m, 10) > 59) m = '59';
+  return raw.length <= 2 ? h : `${h}:${m}`;
+}
 
 interface Props {
   visible: boolean;
@@ -56,8 +54,9 @@ export function BookingSheet({ visible, onClose, listingUuid, halls = [], defaul
   const [calLoading, setCalLoading] = useState(false);
 
   const [date, setDate] = useState('');
-  const [slug, setSlug] = useState(() => SLOTS.find((s) => s.slug === defaultSlug)?.slug ?? SLOTS[0].slug);
-  const [phone, setPhone] = useState(user?.phone ?? '');
+  // Category is the listing's own — no picker (web R2/R3 parity).
+  const slug = defaultSlug ?? '';
+  const [phone, setPhone] = useState(user?.phone ? formatPhoneInput(user.phone) : '');
   const [price, setPrice] = useState('');
   const [time, setTime] = useState('');
   const [note, setNote] = useState('');
@@ -153,16 +152,9 @@ export function BookingSheet({ visible, onClose, listingUuid, halls = [], defaul
         ) : null}
 
         <View style={styles.form}>
-          <SelectField
-            label={t.bookingPickSlot}
-            placeholder={t.bookingPickSlot}
-            value={slug}
-            onChange={(v) => setSlug(String(v))}
-            options={SLOTS.map((s) => ({ value: s.slug, label: (t as any)[`toiItem_${s.key}`] ?? s.slug }))}
-          />
-          <FormField label={t.bookingPhoneLabel} value={phone} onChangeText={setPhone} keyboardType="phone-pad" required placeholder="+7 700 000 00 00" />
+          <FormField label={t.bookingPhoneLabel} value={phone} onChangeText={(v) => setPhone(formatPhoneInput(v))} keyboardType="phone-pad" required placeholder="+7 700 000 00 00" />
           <FormField label={t.bookingPriceLabel} value={price} onChangeText={(v) => setPrice(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" placeholder="0" />
-          <FormField label={t.bookingTimeLabel} value={time} onChangeText={setTime} placeholder="18:00" maxLength={5} />
+          <FormField label={t.bookingTimeLabel} value={time} onChangeText={(v) => setTime(maskTime(v))} keyboardType="number-pad" placeholder="18:00" maxLength={5} />
           <FormField label={t.bookingNoteLabel} value={note} onChangeText={setNote} multiline maxLength={500} />
           <Button title={t.bookSubmit} loading={submitting} onPress={submit} />
         </View>

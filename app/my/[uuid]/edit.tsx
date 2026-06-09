@@ -227,6 +227,21 @@ export default function EditListingScreen() {
     }
   };
 
+  // Already-published listing → "Save changes" (no re-publish), then back to the ad.
+  const onSaveChanges = async () => {
+    setPublishing(true);
+    setErrors({});
+    try {
+      await updateListing(uuid, collect());
+      Alert.alert(t.appName, t.listingSaved);
+      router.replace('/my-listings');
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const onAddImage = async () => {
     const asset = await pick();
     if (!asset) return;
@@ -271,6 +286,7 @@ export default function EditListingScreen() {
   if (loading) return <Loading />;
   if (error || !data) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
 
+  const isDraft = data.status === 'draft';
   const parentOptions: SelectOption[] = categories.map((c) => ({ value: c.id, label: localized(c, 'name', locale) }));
   const subOptions: SelectOption[] =
     categories
@@ -462,15 +478,25 @@ export default function EditListingScreen() {
           onPress={onPreview}
         />
         <View style={styles.gap} />
-        <Button
-          title={t.publish}
-          icon="checkmark-circle-outline"
-          loading={publishing}
-          disabled={saving || !complete}
-          onPress={onPublish}
-        />
+        {isDraft ? (
+          <Button
+            title={t.publish}
+            icon="checkmark-circle-outline"
+            loading={publishing}
+            disabled={saving || !complete}
+            onPress={onPublish}
+          />
+        ) : (
+          <Button
+            title={t.saveChanges}
+            icon="save-outline"
+            loading={publishing}
+            disabled={saving || !complete}
+            onPress={onSaveChanges}
+          />
+        )}
         <Text variant="xsmall" color={Colors.textMuted} center style={styles.publishHint}>
-          {complete ? t.publishHint : t.fillAllHint}
+          {complete ? (isDraft ? t.publishHint : t.saveChangesHint) : t.fillAllHint}
         </Text>
       </View>
     </Screen>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Tabs, router } from 'expo-router';
+import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +25,9 @@ export default function TabLayout() {
   const { t } = useI18n();
 
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  // "Хабарландыруым" lights up on its screen and on the single ad's editor.
+  const listingActive = pathname === '/my-listings' || pathname.startsWith('/my/');
 
   const hasPublished = useMyListingStore((s) => s.hasPublished);
   const refreshMine = useMyListingStore((s) => s.refresh);
@@ -107,7 +110,7 @@ export default function TabLayout() {
           tabBarLabel: () => null,
           tabBarButton: () =>
             hasPublished ? (
-              <ListingTabButton label={t.myListing} onPress={() => router.navigate('/my-listings')} />
+              <ListingTabButton label={t.myListing} active={listingActive} onPress={() => router.navigate('/my-listings')} />
             ) : (
               <CreateTabButton onPress={() => router.navigate('/create')} />
             ),
