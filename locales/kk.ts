@@ -99,8 +99,9 @@ const kk = {
   passwordField: 'Құпия сөз',
   passwordPlaceholder: 'Құпия сөзіңіз',
   passwordNewPlaceholder: 'Кемінде 8 таңба',
-  nameField: 'Атыңыз',
-  namePlaceholder: 'Мысалы: Нұрлан',
+  nameField: 'Никнейм',
+  namePlaceholder: 'мысалы: nurlan_92',
+  nameHint: 'Тек латын әріптері, цифрлар және _ (3–30 таңба). Барлық адамда бірегей.',
   confirmPasswordField: 'Құпия сөзді растау',
   loginAction: 'Кіру',
   registerAction: 'Тіркелу',
@@ -115,7 +116,7 @@ const kk = {
   passwordRequired: 'Құпия сөз енгізіңіз.',
   passwordTooShort: 'Құпия сөз кемінде 8 таңба болуы керек.',
   passwordMismatch: 'Құпия сөздер сәйкес келмейді.',
-  nameRequired: 'Атыңызды енгізіңіз.',
+  nameRequired: 'Никнеймді енгізіңіз.',
 
   // Create / edit form
   createTitle: 'Хабарландыру беру',
@@ -225,15 +226,15 @@ const kk = {
   // Settings
   settingsTitle: 'Параметрлер',
   account: 'Аккаунт',
-  editName: 'Атын өзгерту',
-  name: 'Аты',
+  editName: 'Никнейм өзгерту',
+  name: 'Никнейм',
   email: 'Email',
   phone: 'Телефон',
   changePassword: 'Құпия сөзді өзгерту',
   currentPassword: 'Ағымдағы құпия сөз',
   newPassword: 'Жаңа құпия сөз',
   confirmNewPassword: 'Жаңа құпия сөзді растау',
-  nameSaved: 'Аты сақталды',
+  nameSaved: 'Никнейм сақталды',
   passwordChanged: 'Құпия сөз өзгертілді',
 
   // Calendar

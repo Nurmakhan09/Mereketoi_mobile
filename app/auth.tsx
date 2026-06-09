@@ -149,6 +149,8 @@ export default function AuthScreen() {
           <FormField
             label={t.nameField}
             placeholder={t.namePlaceholder}
+            hint={t.nameHint}
+            autoCapitalize="none"
             value={name}
             onChangeText={setName}
             error={errors.name}

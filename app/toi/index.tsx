@@ -116,7 +116,7 @@ export default function ToiScreen() {
                   variant="outline"
                   icon="search-outline"
                   small
-                  onPress={() => router.push({ pathname: '/(tabs)/search', params: { category: it.category_slug } })}
+                  onPress={() => router.push({ pathname: '/search', params: { category: it.category_slug } })}
                 />
               )}
             </Card>
