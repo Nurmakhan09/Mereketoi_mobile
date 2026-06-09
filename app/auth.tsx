@@ -95,6 +95,12 @@ export default function AuthScreen() {
       await setItem(StorageKeys.token, res.token);
       const user = await fetchMe();
       await setSession(res.token, user);
+      // Fresh Google sign-ups have no nickname yet (OAuth creates it as NULL) —
+      // ask them to pick one before continuing (website lets them set it later).
+      if (!user.name?.trim()) {
+        router.replace({ pathname: '/set-nickname', params: returnTo ? { returnTo } : {} });
+        return;
+      }
       goBack();
     } catch {
       Alert.alert(t.error, t.authFailed);

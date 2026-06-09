@@ -81,7 +81,10 @@ export default function NotificationsScreen() {
     if (url.startsWith('/app/toi') || url.startsWith('/ru/app/toi')) {
       router.push('/toi');
     } else if (url.startsWith('/app/calendar') || url.startsWith('/ru/app/calendar')) {
-      router.push('/calendars');
+      // Booking notifications deep-link to a specific day (/app/calendar/{date}).
+      const m = url.match(/\/app\/calendar\/(\d{4}-\d{2}-\d{2})/);
+      if (m) router.push({ pathname: '/calendar-day', params: { date: m[1] } });
+      else router.push('/calendar');
     } else if (/^https?:\/\//.test(url)) {
       Linking.openURL(url).catch(() => {});
     }

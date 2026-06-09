@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, StyleSheet, FlatList, ScrollView, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { Logo } from '@/components/Logo';
 import { Card } from '@/components/ui/Card';
-import { Pill } from '@/components/ui/Pill';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
@@ -16,6 +15,7 @@ import { GuestGate } from '@/components/GuestGate';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
+import { useMyListingStore } from '@/stores/myListingStore';
 import {
   fetchMyListings,
   archiveListing,
@@ -24,19 +24,20 @@ import {
   publishListing,
 } from '@/services/api/listings';
 import { imageUrl } from '@/utils/imageUrl';
-import { OwnerListing, OwnerStats, ListingStatus } from '@/types';
+import { OwnerListing } from '@/types';
 
-const TABS: ListingStatus[] = ['active', 'draft', 'expired', 'archived', 'blocked'];
-
-/** My Listings — bottom-nav tab (replaces the Notifications tab for logged-in users). */
-export default function MyListingsTab() {
+/**
+ * "Хабарландыруым" — the ONE listing the user owns (one-listing model). Reached from
+ * the middle nav CTA + the profile menu. No plural list / stats / status tabs — a
+ * single ad with its actions, or an empty state inviting them to publish one.
+ */
+export default function MyListingScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const status = useAuthStore((s) => s.status);
+  const refreshMine = useMyListingStore((s) => s.refresh);
 
-  const [items, setItems] = useState<OwnerListing[]>([]);
-  const [stats, setStats] = useState<OwnerStats | null>(null);
-  const [tab, setTab] = useState<ListingStatus>('active');
+  const [listing, setListing] = useState<OwnerListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -45,8 +46,7 @@ export default function MyListingsTab() {
     setError(false);
     try {
       const res = await fetchMyListings();
-      setItems(res.items);
-      setStats(res.stats);
+      setListing(res.items.find((i) => i.status !== 'deleted') ?? null);
     } catch {
       setError(true);
     } finally {
@@ -66,6 +66,7 @@ export default function MyListingsTab() {
     try {
       await fn();
       await load();
+      await refreshMine(); // keep the nav (Calendar tab + middle CTA) in sync
     } catch {
       Alert.alert(t.error, t.errorNetwork);
     }
@@ -77,103 +78,43 @@ export default function MyListingsTab() {
       { text: t.confirm, style: 'destructive', onPress: () => void act(fn) },
     ]);
 
-  const tabLabels: Record<ListingStatus, string> = {
-    active: t.tabActive,
-    draft: t.tabDraft,
-    expired: t.tabExpired,
-    archived: t.tabArchived,
-    blocked: t.tabBlocked,
-    deleted: t.actDelete,
-  };
-
-  const filtered = items.filter((i) => i.status === tab);
-  // One-listing model: a user has at most one non-deleted listing. If one exists,
-  // the "+ New" CTA reopens its editor (the backend rejects a 2nd create).
-  const existing = items.find((i) => i.status !== 'deleted');
-  const onPrimary = () => router.push(existing ? `/my/${existing.uuid}/edit` : '/create');
-
-  const header = (
-    <View style={{ paddingTop: insets.top + Spacing.base }}>
-      <View style={styles.titleRow}>
-        <Logo size="sm" />
-      </View>
-      <Text variant="h1" color={Colors.text} style={styles.heading}>
-        {t.myListings}
-      </Text>
-      <Button title={existing ? t.menuMyListings : t.newListing} icon={existing ? 'create-outline' : 'add'} onPress={onPrimary} style={styles.newBtn} />
-
-      {stats ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow}>
-          <StatCard label={t.statTotal} value={stats.total} />
-          <StatCard label={t.statActive} value={stats.active} />
-          <StatCard label={t.statDraft} value={stats.draft} />
-          <StatCard label={t.statExpired} value={stats.expired} />
-        </ScrollView>
-      ) : null}
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
-        {TABS.map((s) => (
-          <Pill key={s} label={tabLabels[s]} selected={tab === s} onPress={() => setTab(s)} />
-        ))}
-      </ScrollView>
-    </View>
-  );
-
-  if (loading && !items.length) {
+  if (loading && !listing) {
     return (
-      <View style={styles.fill}>
-        {header}
+      <View style={[styles.fill, { paddingTop: insets.top + Spacing.base }]}>
+        <View style={styles.titleRow}><Logo size="sm" /></View>
         <Loading />
       </View>
     );
   }
 
   return (
-    <FlatList
-      style={styles.fill}
-      data={filtered}
-      keyExtractor={(it) => it.uuid}
-      contentContainerStyle={styles.list}
-      ListHeaderComponent={header}
-      renderItem={({ item }) => (
+    <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.base }]}>
+      <View style={styles.titleRow}><Logo size="sm" /></View>
+      <Text variant="h1" color={Colors.text} style={styles.heading}>{t.myListing}</Text>
+
+      {error && !listing ? (
+        <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />
+      ) : !listing ? (
+        <EmptyState
+          icon="cube-outline"
+          title={t.emptyMyListings}
+          actionLabel={t.newListing}
+          onAction={() => router.push('/create')}
+        />
+      ) : (
         <Row
-          item={item}
+          item={listing}
           t={t}
-          onEdit={() => router.push(`/my/${item.uuid}/edit`)}
-          onCalendar={() => router.push(`/my/${item.uuid}/calendar`)}
-          onView={() => item.public_code && router.push(`/listing/${item.uuid}`)}
-          onPublish={() => void act(() => publishListing(item.uuid))}
-          onArchive={() => confirmThen(t.confirmArchive, () => archiveListing(item.uuid))}
-          onUnarchive={() => void act(() => unarchiveListing(item.uuid))}
-          onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(item.uuid))}
+          onEdit={() => router.push(`/my/${listing.uuid}/edit`)}
+          onCalendar={() => router.push('/calendar')}
+          onView={() => listing.public_code && router.push(`/listing/${listing.uuid}`)}
+          onPublish={() => void act(() => publishListing(listing.uuid))}
+          onArchive={() => confirmThen(t.confirmArchive, () => archiveListing(listing.uuid))}
+          onUnarchive={() => void act(() => unarchiveListing(listing.uuid))}
+          onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(listing.uuid))}
         />
       )}
-      ListEmptyComponent={
-        error ? (
-          <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />
-        ) : (
-          <EmptyState
-            icon="cube-outline"
-            title={t.emptyMyListings}
-            actionLabel={t.newListing}
-            onAction={() => router.push('/create')}
-          />
-        )
-      }
-    />
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card style={styles.statCard} padded>
-      <Text variant="h2" color={Colors.primary}>
-        {value}
-      </Text>
-      <Text variant="xsmall" color={Colors.textMuted}>
-        {label}
-      </Text>
-    </Card>
+    </ScrollView>
   );
 }
 
@@ -203,12 +144,8 @@ function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnar
           </View>
         )}
         <View style={styles.rowInfo}>
-          <Text variant="h3" color={Colors.text} numberOfLines={2}>
-            {item.title}
-          </Text>
-          <View style={styles.rowBadge}>
-            <StatusBadge status={s} t={t} />
-          </View>
+          <Text variant="h3" color={Colors.text} numberOfLines={2}>{item.title}</Text>
+          <View style={styles.rowBadge}><StatusBadge status={s} t={t} /></View>
         </View>
       </Pressable>
 
@@ -226,7 +163,6 @@ function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnar
   );
 }
 
-/** Action chip — colored icon + label on a soft tinted background. */
 function ActBtn({
   icon,
   label,
@@ -241,22 +177,16 @@ function ActBtn({
   return (
     <Pressable style={[styles.actBtn, { borderColor: color }]} onPress={onPress}>
       <Ionicons name={icon} size={15} color={color} />
-      <Text variant="xsmall" color={color} style={styles.actLabel}>
-        {label}
-      </Text>
+      <Text variant="xsmall" color={color} style={styles.actLabel}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
-  list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
+  content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   titleRow: { alignItems: 'center', marginBottom: Spacing.md },
   heading: { marginBottom: Spacing.base },
-  newBtn: { marginBottom: Spacing.base },
-  statsRow: { marginBottom: Spacing.base },
-  statCard: { width: 96, marginRight: Spacing.sm, alignItems: 'flex-start' },
-  tabs: { marginBottom: Spacing.base },
   row: { marginBottom: Spacing.md },
   rowTop: { flexDirection: 'row' },
   rowImg: { width: 64, height: 64, borderRadius: Radius.sm, backgroundColor: Colors.surfaceMuted },

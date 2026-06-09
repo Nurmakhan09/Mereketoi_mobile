@@ -72,9 +72,9 @@ export default function ProfileScreen() {
       {/* Account menu (authed) */}
       {isAuthed ? (
         <Card style={styles.menu} padded={false}>
-          <MenuItem icon="list-outline" label={t.menuMyListings} onPress={() => router.push('/my-listings')} />
+          <MenuItem icon="albums-outline" label={t.menuMyListings} onPress={() => router.push('/my-listings')} />
           <MenuItem icon="sparkles-outline" label={t.menuToi} onPress={() => router.push('/toi')} />
-          <MenuItem icon="calendar-outline" label={t.calendarTitle} onPress={() => router.push('/calendars')} />
+          <MenuItem icon="calendar-outline" label={t.calendarTitle} onPress={() => router.push('/calendar')} />
           <MenuItem icon="notifications-outline" label={t.notificationsTitle} onPress={() => router.push('/notifications')} />
           <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} last />
         </Card>

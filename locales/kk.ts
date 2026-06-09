@@ -209,7 +209,7 @@ const kk = {
 
   // Profile
   profileTitle: 'Профиль',
-  menuMyListings: 'Хабарландыруларым',
+  menuMyListings: 'Хабарландыруым',
   menuSettings: 'Параметрлер',
   menuReminders: 'Еске салғыштар',
   menuAbout: 'Біз туралы',
@@ -246,6 +246,17 @@ const kk = {
   publicNote: 'Көпшілік ескертпесі',
   privateNote: 'Жеке ескертпе',
   daySaved: 'Сақталды',
+  myListing: 'Хабарландыруым',
+  calNotebookIntro: 'Әр күнге қолжетімділікті белгілеп, той сұраныстарын осы жерден басқарыңыз.',
+  calNeedsListingTitle: 'Алдымен хабарландыру жариялаңыз',
+  calBackToList: 'Күнтізбеге оралу',
+  calPastReadonlyHint: 'Өткен күн — тек қарап шығуға (есеп).',
+  calStatusLabel: 'Осы күнгі күй',
+  calChangeRequested: 'Өзгеріс сұралды',
+  nameInvalid: 'Никнейм қате форматта (тек a–z, 0–9, _, 3–30 таңба).',
+  setNicknameTitle: 'Никнейм таңдаңыз',
+  setNicknameSub: 'Сізді осы атпен көреді. Кейін профильде өзгерте аласыз.',
+  setNicknameLater: 'Кейінірек',
 
   // Reminders
   remindersTitle: 'Еске салғыштар',

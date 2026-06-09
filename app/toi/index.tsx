@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, Linking, Alert } from 'react-native';
-import { router, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/ui/Text';
@@ -18,16 +18,27 @@ import { cancelBooking, confirmChange, rejectChange, requestChange } from '@/ser
 import { formatPrice } from '@/utils/format';
 import { WeddingPlan, WeddingPlanResponse, BookingCard } from '@/types';
 
+/**
+ * Той ұйымдастыру — step-by-step wizard (mirrors app/Views/app/wedding/index.php):
+ *   Step 0       = той meta (date / time / city / guests / budget)
+ *   Steps 1..N   = one per category (checklist done + note + booking card / "Іздеу")
+ *   Final step   = custom checklist items + review
+ * Clickable step dots up top; Back / Next / Save at the bottom. Cost badge = the
+ * sum of accepted bookings' agreed prices. Deep-linkable via ?step=N.
+ */
 export default function ToiScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
   const { isAuthed, requireAuth } = useRequireAuth();
+  const params = useLocalSearchParams<{ step?: string }>();
 
   const [data, setData] = useState<WeddingPlanResponse | null>(null);
   const [plan, setPlan] = useState<WeddingPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
+  const stepInit = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,31 +48,23 @@ export default function ToiScreen() {
       setData(d);
       setPlan(d.plan);
       navigation.setOptions({ title: t.toiTitle });
+      if (!stepInit.current) {
+        const s = params.step ? parseInt(params.step, 10) : 0;
+        if (!Number.isNaN(s) && s > 0) setStep(s);
+        stepInit.current = true;
+      }
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [navigation, t.toiTitle]);
+  }, [navigation, t.toiTitle, params.step]);
 
   useEffect(() => {
     if (isAuthed) void load();
-    else { requireAuth(() => {}); }
+    else requireAuth(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
-
-  const onSave = async () => {
-    if (!plan) return;
-    setSaving(true);
-    try {
-      await saveWeddingPlan(plan);
-      Alert.alert(t.appName, t.toiSaved);
-    } catch {
-      Alert.alert(t.error, t.errorNetwork);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (loading) return <Loading />;
   if (error || !data || !plan) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
@@ -76,58 +79,74 @@ export default function ToiScreen() {
 
   const cityOptions = data.cities.map((c) => ({ value: c.id, label: localized(c, 'name', locale) }));
 
-  return (
-    <View style={styles.fill}>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Cost badge */}
-        <Card style={styles.costCard} padded>
-          <Text variant="xsmall" color={Colors.textMuted}>{t.toiCostBadge}</Text>
-          <Text variant="h2" color={Colors.secondary}>
-            {formatPrice(data.accepted_total, 'fixed', { negotiable: '', notSpecified: '', tenge: t.tenge })}
-          </Text>
-        </Card>
+  const totalSteps = plan.items.length + 2;
+  const cur = Math.max(0, Math.min(step, totalSteps - 1));
+  const isLast = cur === totalSteps - 1;
 
-        {/* Той туралы (meta) */}
+  const persist = async (): Promise<boolean> => {
+    setSaving(true);
+    try {
+      await saveWeddingPlan(plan);
+      return true;
+    } catch {
+      Alert.alert(t.error, t.errorNetwork);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onSave = async () => {
+    if (await persist()) Alert.alert(t.appName, t.toiSaved);
+  };
+
+  // "Іздеу" → save the plan first (so meta/notes aren't lost), then open search.
+  const onSearch = async (slug: string) => {
+    await persist();
+    router.push({ pathname: '/search', params: { category: slug } });
+  };
+
+  // ── Step body ──────────────────────────────────────────────────────────────
+  let body: React.ReactNode = null;
+  if (cur === 0) {
+    body = (
+      <>
         <Text variant="h3" color={Colors.text} style={styles.section}>{t.toiStep0Title}</Text>
-        <Card padded style={styles.metaCard}>
+        <Card padded>
           <FormField label={t.toiMetaDate} value={plan.meta.date} onChangeText={(v) => setMeta({ date: v })} placeholder="2026-08-01" />
           <FormField label={t.toiMetaTime} value={plan.meta.time} onChangeText={(v) => setMeta({ time: v })} placeholder="18:00" maxLength={5} />
           <SelectField label={t.toiMetaCity} placeholder="—" value={plan.meta.city_id || null} options={cityOptions} onChange={(v) => setMeta({ city_id: Number(v) })} />
           <FormField label={t.toiMetaGuests} value={plan.meta.guests ? String(plan.meta.guests) : ''} onChangeText={(v) => setMeta({ guests: parseInt(v.replace(/[^0-9]/g, ''), 10) || 0 })} keyboardType="number-pad" placeholder="0" />
           <FormField label={t.toiMetaBudget} value={plan.meta.budget ? String(plan.meta.budget) : ''} onChangeText={(v) => setMeta({ budget: parseInt(v.replace(/[^0-9]/g, ''), 10) || 0 })} keyboardType="number-pad" placeholder="0" />
         </Card>
-
-        {/* Checklist items */}
-        {plan.items.map((it) => {
-          const bk = data.bookings[it.category_slug] ?? null;
-          return (
-            <Card key={it.key} padded style={styles.itemCard}>
-              <View style={styles.itemHead}>
-                <Pressable style={styles.check} onPress={() => setItem(it.key, { done: !it.done })} hitSlop={6}>
-                  <Ionicons name={it.done ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={it.done ? Colors.success : Colors.textFaint} />
-                </Pressable>
-                <Text variant="h3" color={Colors.text} style={styles.itemTitle}>
-                  {(t as any)[`toiItem_${it.key}`] ?? it.key}
-                </Text>
-              </View>
-              <FormField label={t.toiNotePlaceholder} value={it.note} onChangeText={(v) => setItem(it.key, { note: v })} maxLength={200} />
-
-              {bk ? (
-                <BookingCardView card={bk} onChanged={load} />
-              ) : (
-                <Button
-                  title={t.toiSearch}
-                  variant="outline"
-                  icon="search-outline"
-                  small
-                  onPress={() => router.push({ pathname: '/search', params: { category: it.category_slug } })}
-                />
-              )}
-            </Card>
-          );
-        })}
-
-        {/* Custom tasks */}
+      </>
+    );
+  } else if (cur <= plan.items.length) {
+    const it = plan.items[cur - 1];
+    const bk = data.bookings[it.category_slug] ?? null;
+    body = (
+      <Card padded>
+        <View style={styles.itemHead}>
+          <Text variant="h3" color={Colors.text} style={styles.itemTitle}>
+            <Text variant="h3" color={Colors.primary}>{cur}. </Text>
+            {(t as Record<string, string>)[`toiItem_${it.key}`] ?? it.key}
+          </Text>
+        </View>
+        <Pressable style={styles.checkRow} onPress={() => setItem(it.key, { done: !it.done })}>
+          <Ionicons name={it.done ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={it.done ? Colors.success : Colors.textFaint} />
+          <Text variant="small" color={Colors.text} style={styles.checkLbl}>{t.toiMarkDone}</Text>
+        </Pressable>
+        <FormField label={t.toiNotePlaceholder} value={it.note} onChangeText={(v) => setItem(it.key, { note: v })} maxLength={200} />
+        {bk ? (
+          <BookingCardView card={bk} onChanged={load} />
+        ) : (
+          <Button title={t.toiSearch} variant="outline" icon="search-outline" small onPress={() => onSearch(it.category_slug)} />
+        )}
+      </Card>
+    );
+  } else {
+    body = (
+      <>
         <Text variant="h3" color={Colors.text} style={styles.section}>{t.toiCustomTitle}</Text>
         {plan.custom_items.map((c, i) => (
           <Card key={i} padded style={styles.itemCard}>
@@ -143,13 +162,57 @@ export default function ToiScreen() {
           </Card>
         ))}
         <Button title={t.toiAddItem} variant="outline" icon="add" small onPress={addCustom} style={styles.addBtn} />
-
-        <Button title={t.toiSave} loading={saving} onPress={onSave} style={styles.saveBtn} />
         <Pressable style={styles.histLink} onPress={() => router.push('/toi/history')}>
           <Ionicons name="time-outline" size={18} color={Colors.primary} />
           <Text variant="small" color={Colors.primary} style={styles.histLabel}>{t.historyTitle}</Text>
         </Pressable>
+      </>
+    );
+  }
+
+  return (
+    <View style={styles.fill}>
+      {/* Cost badge */}
+      <View style={styles.topbar}>
+        <Card style={styles.costCard} padded>
+          <Text variant="xsmall" color={Colors.textMuted}>{t.toiCostBadge}</Text>
+          <Text variant="h3" color={Colors.secondary}>
+            {formatPrice(data.accepted_total, 'fixed', { negotiable: '', notSpecified: '', tenge: t.tenge })}
+          </Text>
+        </Card>
+      </View>
+
+      {/* Step dots */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dots} contentContainerStyle={styles.dotsInner}>
+        {Array.from({ length: totalSteps }).map((_, i) => {
+          const done = i >= 1 && i <= plan.items.length && plan.items[i - 1].done;
+          return (
+            <Pressable
+              key={i}
+              onPress={() => setStep(i)}
+              style={[styles.dot, i === cur && styles.dotCur, done && i !== cur && styles.dotDone]}
+            >
+              <Text variant="xsmall" color={i === cur ? Colors.white : done ? Colors.success : Colors.textMuted} style={styles.dotTxt}>{i + 1}</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
+
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        {body}
+      </ScrollView>
+
+      {/* Bottom nav */}
+      <View style={styles.bottomNav}>
+        {cur > 0 ? (
+          <Button title={t.toiStepBack} variant="outline" onPress={() => setStep(cur - 1)} style={styles.navBtn} />
+        ) : <View style={styles.navBtn} />}
+        {isLast ? (
+          <Button title={t.toiSave} loading={saving} onPress={onSave} style={styles.navBtn} />
+        ) : (
+          <Button title={t.toiStepNext} onPress={() => setStep(cur + 1)} style={styles.navBtn} />
+        )}
+      </View>
     </View>
   );
 }
@@ -287,18 +350,33 @@ function DealRow({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  costCard: { alignItems: 'flex-end', marginBottom: Spacing.base },
-  section: { marginBottom: Spacing.sm, marginTop: Spacing.xs },
-  metaCard: { marginBottom: Spacing.base },
+  topbar: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, alignItems: 'flex-end' },
+  costCard: { alignItems: 'flex-end' },
+  dots: { maxHeight: 52, flexGrow: 0 },
+  dotsInner: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.sm, alignItems: 'center' },
+  dot: {
+    width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: Colors.border,
+    backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
+  },
+  dotCur: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  dotDone: { borderColor: Colors.success, backgroundColor: '#F0FDF4' },
+  dotTxt: { fontWeight: '700' },
+  body: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
+  section: { marginBottom: Spacing.sm },
   itemCard: { marginBottom: Spacing.md },
   itemHead: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
-  check: { marginRight: Spacing.sm },
   itemTitle: { flex: 1 },
+  check: { marginRight: Spacing.sm },
+  checkRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+  checkLbl: { marginLeft: Spacing.sm },
   addBtn: { marginTop: Spacing.xs, alignSelf: 'flex-start' },
-  saveBtn: { marginTop: Spacing.base },
   histLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Spacing.lg },
   histLabel: { marginLeft: Spacing.xs },
+  bottomNav: {
+    flexDirection: 'row', gap: Spacing.md, padding: Spacing.base,
+    borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.surface,
+  },
+  navBtn: { flex: 1 },
   bk: { marginTop: Spacing.md, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1 },
   bkPending: { borderColor: '#FCD34D', backgroundColor: '#FFFBEB' },
   bkAccepted: { borderColor: '#86EFAC', backgroundColor: '#F0FDF4' },
