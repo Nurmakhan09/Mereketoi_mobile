@@ -94,7 +94,7 @@ const ru: Strings = {
   passwordNewPlaceholder: 'Минимум 8 символов',
   nameField: 'Никнейм',
   namePlaceholder: 'например: nurlan_92',
-  nameHint: 'Только латинские буквы, цифры и _ (3–30 символов). Уникален для каждого.',
+  nameHint: 'Только строчные латинские буквы и цифры, _ (3–30 символов). Например: zhibek, zhibek00.',
   confirmPasswordField: 'Подтвердите пароль',
   loginAction: 'Войти',
   registerAction: 'Зарегистрироваться',

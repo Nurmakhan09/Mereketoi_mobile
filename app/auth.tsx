@@ -62,7 +62,11 @@ export default function AuthScreen() {
     if (!password) e.password = t.passwordRequired;
     else if (mode === 'register' && password.length < 8) e.password = t.passwordTooShort;
     if (mode === 'register') {
-      if (!name.trim()) e.name = t.nameRequired;
+      const nm = name.trim();
+      if (!nm) e.name = t.nameRequired;
+      // Nickname rule (same as backend): lowercase latin + digits + _, 3–30. No
+      // Cyrillic / uppercase (e.g. "ЯРШИУ", "zHDA" are invalid; "zhibek00" is fine).
+      else if (!/^[a-z0-9_]{3,30}$/.test(nm)) e.name = t.nameInvalid;
       if (password !== confirm) e.confirm = t.passwordMismatch;
     }
     setErrors(e);
@@ -167,7 +171,7 @@ export default function AuthScreen() {
             hint={t.nameHint}
             autoCapitalize="none"
             value={name}
-            onChangeText={setName}
+            onChangeText={(v) => setName(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
             error={errors.name}
           />
         ) : null}

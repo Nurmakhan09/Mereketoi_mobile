@@ -71,7 +71,7 @@ export default function SetNicknameScreen() {
           hint={t.nameHint}
           autoCapitalize="none"
           value={nickname}
-          onChangeText={(v) => setNickname(v.toLowerCase())}
+          onChangeText={(v) => setNickname(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
           error={error}
         />
         <Button title={t.save} loading={busy} onPress={onSave} style={styles.save} />

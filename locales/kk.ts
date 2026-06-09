@@ -101,7 +101,7 @@ const kk = {
   passwordNewPlaceholder: 'Кемінде 8 таңба',
   nameField: 'Никнейм',
   namePlaceholder: 'мысалы: nurlan_92',
-  nameHint: 'Тек латын әріптері, цифрлар және _ (3–30 таңба). Барлық адамда бірегей.',
+  nameHint: 'Тек кіші латын әріптері мен цифрлар, _ (3–30 таңба). Мысалы: zhibek, zhibek00.',
   confirmPasswordField: 'Құпия сөзді растау',
   loginAction: 'Кіру',
   registerAction: 'Тіркелу',
