@@ -6,11 +6,13 @@ import { Screen } from '@/components/ui/Screen';
 import { Loading, ErrorState } from '@/components/ui/StateViews';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
-import { createListing } from '@/services/api/listings';
+import { createListing, fetchMyListings } from '@/services/api/listings';
 
 /**
- * Create entry tab. Guest → Auth (return here). Authed → create a blank draft
- * server-side, then replace into the edit form (master-spec §3.9 get-or-create draft).
+ * Create entry tab. Guest → Auth (return here). Authed → ONE-listing model:
+ * reuse the user's existing non-deleted listing (any status) if there is one,
+ * otherwise create a blank draft. Mirrors the web getOrCreateBlankDraft — the
+ * backend rejects a 2nd create (oneListingOnly), so never start a second one.
  * Renders nothing persistent — it bounces the user onward on focus.
  */
 export default function CreateTab() {
@@ -26,7 +28,10 @@ export default function CreateTab() {
     }
     setError(false);
     try {
-      const uuid = await createListing();
+      // Reopen the single listing if it exists; else create the first one.
+      const res = await fetchMyListings();
+      const existing = res.items.find((i) => i.status !== 'deleted');
+      const uuid = existing ? existing.uuid : await createListing();
       router.replace(`/my/${uuid}/edit`);
     } catch {
       setError(true);

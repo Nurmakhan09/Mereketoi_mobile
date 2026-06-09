@@ -224,7 +224,7 @@ const ru: Strings = {
   nameSaved: 'Никнейм сохранён',
   passwordChanged: 'Пароль изменён',
 
-  calendarTitle: 'Доступность',
+  calendarTitle: 'Календарь',
   selectHall: 'Выбрать зал',
   dayStatusFree: 'Свободно',
   dayStatusBooked: 'Занято',

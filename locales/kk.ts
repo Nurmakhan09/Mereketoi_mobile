@@ -238,7 +238,7 @@ const kk = {
   passwordChanged: 'Құпия сөз өзгертілді',
 
   // Calendar
-  calendarTitle: 'Қолжетімділік',
+  calendarTitle: 'Күнтізбе',
   selectHall: 'Зал таңдау',
   dayStatusFree: 'Бос',
   dayStatusBooked: 'Бос емес',
