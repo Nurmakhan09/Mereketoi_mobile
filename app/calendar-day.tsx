@@ -128,7 +128,9 @@ export default function CalendarDayScreen() {
         time: invTime.trim() || null,
       });
       setInviteUrl(res.invite_url);
-      await load();
+      // Refresh ONLY the day's invite list — calling load() here would reset
+      // inviteUrl back to null and the freshly created link would never show.
+      try { setDay(await fetchProviderDay(date)); } catch { /* keep current */ }
     } catch (e: any) {
       Alert.alert(t.error, e?.message ?? t.errorNetwork);
     } finally {
