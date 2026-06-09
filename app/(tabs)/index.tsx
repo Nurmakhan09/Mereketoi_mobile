@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, Pressable, ScrollView, FlatList } from 'react-native';
+import { View, StyleSheet, Pressable, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -80,7 +80,7 @@ export default function HomeScreen() {
             {t.error}
           </Text>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+          <View style={styles.grid}>
             {categories.map((cat) => (
               <CategoryBubble
                 key={cat.id}
@@ -89,7 +89,7 @@ export default function HomeScreen() {
                 onPress={() => goSearch({ category: cat.slug })}
               />
             ))}
-          </ScrollView>
+          </View>
         )}
       </View>
 
@@ -158,7 +158,7 @@ function CategoryBubble({
   return (
     <Pressable style={styles.bubble} onPress={onPress}>
       <View style={styles.bubbleIcon}>
-        <Ionicons name="grid-outline" size={24} color={Colors.primary} />
+        <Ionicons name="grid-outline" size={20} color={Colors.primary} />
       </View>
       <Text variant="xsmall" color={Colors.textBody} center numberOfLines={2} style={styles.bubbleLabel}>
         {label}
@@ -205,16 +205,17 @@ const styles = StyleSheet.create({
   sectionHeading: { flex: 1, marginRight: Spacing.sm },
   seeAllBtn: { flexShrink: 0 },
   sectionTitle: { marginBottom: Spacing.md },
-  strip: { paddingRight: Spacing.base },
-  bubble: { width: 96, alignItems: 'center', marginRight: Spacing.md },
+  // Compact wrapped grid (4 per row) so every category fits on one screen.
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  bubble: { width: '25%', alignItems: 'center', marginBottom: Spacing.md, paddingHorizontal: 2 },
   bubbleIcon: {
-    width: 60,
-    height: 60,
+    width: 46,
+    height: 46,
     borderRadius: Radius.pill,
     backgroundColor: Colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.xs,
+    marginBottom: 4,
   },
-  bubbleLabel: { lineHeight: 16, minHeight: 32 },
+  bubbleLabel: { lineHeight: 13, minHeight: 26 },
 });

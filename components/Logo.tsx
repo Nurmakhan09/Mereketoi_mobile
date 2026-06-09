@@ -17,11 +17,13 @@ export function Logo({
   style?: ViewStyle;
 }) {
   const fontSize = size === 'lg' ? 28 : size === 'sm' ? 18 : 22;
+  // Over the navy hero the whole wordmark is white; elsewhere it's navy "mereke" + gold "toi".
   const base = light ? Colors.white : Colors.text;
+  const accent = light ? Colors.white : Colors.secondary;
   return (
     <View style={[styles.row, style]}>
       <Text style={[styles.word, { fontSize, color: base }]}>mereke</Text>
-      <Text style={[styles.word, { fontSize, color: Colors.secondary }]}>toi</Text>
+      <Text style={[styles.word, { fontSize, color: accent }]}>toi</Text>
     </View>
   );
 }
