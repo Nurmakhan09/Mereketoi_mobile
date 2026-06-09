@@ -30,6 +30,7 @@ export default function TabLayout() {
   const listingActive = pathname === '/my-listings' || pathname.startsWith('/my/');
 
   const hasPublished = useMyListingStore((s) => s.hasPublished);
+  const pendingBookings = useMyListingStore((s) => s.pendingBookings);
   const refreshMine = useMyListingStore((s) => s.refresh);
   const resetMine = useMyListingStore((s) => s.reset);
 
@@ -89,6 +90,7 @@ export default function TabLayout() {
         options={{
           href: showCalendar ? '/calendar' : null,
           title: t.calendarTitle,
+          tabBarBadge: showCalendar && pendingBookings > 0 ? pendingBookings : undefined,
           tabBarIcon: ({ focused }) => (
             <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={focused ? Colors.primary : Colors.secondary} />
           ),

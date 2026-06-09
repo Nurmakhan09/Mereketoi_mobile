@@ -33,14 +33,15 @@ interface DayRow {
   isoWd: number; // 0=Mon .. 6=Sun
   status: DayStatus;
   note: string;
+  marker: string; // '' | 'pending' | 'accepted' той booking on this day
   isToday: boolean;
   isPast: boolean;
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-/** Build all rows for a month (every day 1..N), looking up saved status/notes. */
-function buildRows(month: string, days: OwnerCalendar['days']): DayRow[] {
+/** Build all rows for a month (every day 1..N), looking up saved status/notes + той markers. */
+function buildRows(month: string, days: OwnerCalendar['days'], bookings: Record<string, string>): DayRow[] {
   const byDate = new Map(days.map((d) => [d.date, d]));
   const [y, m] = month.split('-').map(Number);
   const count = new Date(y, m, 0).getDate(); // days in month
@@ -56,6 +57,7 @@ function buildRows(month: string, days: OwnerCalendar['days']): DayRow[] {
       isoWd: (js.getDay() + 6) % 7,
       status: saved?.status ?? 'free',
       note: (saved?.public_note || saved?.private_note || '').trim(),
+      marker: bookings[date] ?? '',
       isToday: date === today,
       isPast: date < today,
     });
@@ -161,7 +163,7 @@ export default function CalendarTab() {
   if (loading && !data) return <Loading />;
   if (error || !data) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
 
-  const rows = buildRows(data.month, data.days);
+  const rows = buildRows(data.month, data.days, data.bookings ?? {});
   const months = locale === 'ru' ? MONTHS_RU : MONTHS_KK;
   const wd = locale === 'ru' ? WD_RU : WD_KK;
 
@@ -184,10 +186,19 @@ export default function CalendarTab() {
               <Text variant="xsmall" color={Colors.textMuted}>{wd[item.isoWd]}</Text>
             </View>
             <View style={styles.mid}>
-              <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                <Text variant="xsmall" color={st.fg} style={styles.badgeTxt}>
-                  {item.status === 'free' ? t.dayStatusFree : item.status === 'booked' ? t.dayStatusBooked : t.dayStatusUnavailable}
-                </Text>
+              <View style={styles.badgeRow}>
+                <View style={[styles.badge, { backgroundColor: st.bg }]}>
+                  <Text variant="xsmall" color={st.fg} style={styles.badgeTxt}>
+                    {item.status === 'free' ? t.dayStatusFree : item.status === 'booked' ? t.dayStatusBooked : t.dayStatusUnavailable}
+                  </Text>
+                </View>
+                {item.marker ? (
+                  <View style={[styles.mark, item.marker === 'pending' ? styles.markPending : styles.markToi]}>
+                    <Text variant="xsmall" color={item.marker === 'pending' ? '#92400e' : '#15803d'} style={styles.badgeTxt}>
+                      {item.marker === 'pending' ? `● ${t.bookingStatusPending}` : '● Той'}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               {item.note ? (
                 <Text variant="xsmall" color={Colors.textMuted} numberOfLines={1} style={styles.note}>{item.note}</Text>
@@ -217,7 +228,11 @@ const styles = StyleSheet.create({
   rowPast: { backgroundColor: Colors.surfaceMuted, borderColor: Colors.surfaceMuted },
   dateCol: { width: 44, alignItems: 'center' },
   mid: { flex: 1, gap: 4 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 2, borderRadius: Radius.sm },
+  mark: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.sm },
+  markPending: { backgroundColor: '#fef3c7' },
+  markToi: { backgroundColor: '#dcfce7' },
   badgeTxt: { fontWeight: '700' },
   note: {},
   footerNote: { paddingTop: Spacing.sm },

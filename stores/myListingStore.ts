@@ -18,6 +18,8 @@ interface MyListingState {
   status: ListingStatus | null;
   /** A listing exists AND is past draft (active/expired/archived/blocked). */
   hasPublished: boolean;
+  /** Pending той requests addressed to this provider → calendar badge. */
+  pendingBookings: number;
   loaded: boolean;
   refresh: () => Promise<void>;
   reset: () => void;
@@ -27,6 +29,7 @@ export const useMyListingStore = create<MyListingState>((set) => ({
   uuid: null,
   status: null,
   hasPublished: false,
+  pendingBookings: 0,
   loaded: false,
 
   refresh: async () => {
@@ -37,6 +40,7 @@ export const useMyListingStore = create<MyListingState>((set) => ({
         uuid: listing?.uuid ?? null,
         status: listing?.status ?? null,
         hasPublished: !!listing && listing.status !== 'draft' && listing.status !== 'deleted',
+        pendingBookings: res.stats.pending_bookings ?? 0,
         loaded: true,
       });
     } catch {
@@ -45,5 +49,5 @@ export const useMyListingStore = create<MyListingState>((set) => ({
     }
   },
 
-  reset: () => set({ uuid: null, status: null, hasPublished: false, loaded: false }),
+  reset: () => set({ uuid: null, status: null, hasPublished: false, pendingBookings: 0, loaded: false }),
 }));

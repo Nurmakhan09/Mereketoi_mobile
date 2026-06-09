@@ -175,6 +175,10 @@ export interface PublicCalendar {
 export interface OwnerCalendar extends PublicCalendar {
   is_venue: boolean;
   halls: { name: string }[];
+  /** date → 'pending' | 'accepted' той markers for the month (owner-only). */
+  bookings?: Record<string, string>;
+  /** total pending той requests for this provider (calendar badge). */
+  pending_bookings?: number;
 }
 
 // ── Filters / catalog query ──────────────────────────────────────────────────

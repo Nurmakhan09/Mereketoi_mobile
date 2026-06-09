@@ -323,7 +323,7 @@ const kk = {
   bookingDeclineAct: 'Бас тарту',
   bookingClient: 'Тапсырыс беруші',
   bookingPrivate: 'Тек сізге көрінеді',
-  bookingStatusPending: 'Күтілуде',
+  bookingStatusPending: 'Сұраныста',
   bookingStatusAccepted: 'Қабылданды',
   bookingStatusDeclined: 'Қабылданбады',
   bookingStatusCancelled: 'Тоқтатылды',

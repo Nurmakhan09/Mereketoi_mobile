@@ -308,7 +308,7 @@ const ru: Strings = {
   bookingDeclineAct: 'Отклонить',
   bookingClient: 'Заказчик',
   bookingPrivate: 'Видно только вам',
-  bookingStatusPending: 'Ожидает',
+  bookingStatusPending: 'Заявка',
   bookingStatusAccepted: 'Принято',
   bookingStatusDeclined: 'Отклонено',
   bookingStatusCancelled: 'Отменено',
