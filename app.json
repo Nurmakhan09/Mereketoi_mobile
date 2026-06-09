@@ -1,19 +1,24 @@
 {
   "expo": {
-    "name": "mereketoi-mobile",
+    "name": "Mereketoi",
     "slug": "mereketoi-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mereketoimobile",
-    "userInterfaceStyle": "automatic",
+    "scheme": "mereketoi",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "kz.mereketoi.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+      }
     },
     "android": {
+      "package": "kz.mereketoi.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#000099",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -38,10 +43,19 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      "expo-secure-store",
+      "expo-localization",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+        }
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
+      "typedRoutes": false,
       "reactCompiler": true
     }
   }

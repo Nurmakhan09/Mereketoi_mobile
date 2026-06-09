@@ -1,98 +1,220 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, Pressable, ScrollView, FlatList } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Text } from '@/components/ui/Text';
+import { Logo } from '@/components/Logo';
+import { ListingCard } from '@/components/ListingCard';
+import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
+import { Colors, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useI18n, localized } from '@/locales';
+import { useTaxonomy } from '@/features/listings/useTaxonomy';
+import { useFavoritesStore } from '@/stores/favoritesStore';
+import { useRequireAuth } from '@/features/auth/useRequireAuth';
+import { fetchListings } from '@/services/api/listings';
+import { ListingCard as ListingCardType, Category } from '@/types';
 
+/** Home / Discovery — hero search, parent-category strip, recommended grid. */
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { t, locale } = useI18n();
+  const insets = useSafeAreaInsets();
+  const { categories, error: taxoError } = useTaxonomy();
+  const { isAuthed, requireAuth } = useRequireAuth();
+  const favoriteIds = useFavoritesStore((s) => s.ids);
+  const toggleFav = useFavoritesStore((s) => s.toggle);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [items, setItems] = useState<ListingCardType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetchListings({ sort: 'newest' });
+      setItems(res.items);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const goSearch = (params?: Record<string, string>) =>
+    router.push({ pathname: '/search', params });
+
+  const onFavorite = (uuid: string) =>
+    requireAuth(() => {
+      void toggleFav(uuid).catch(() => {});
+    });
+
+  const renderHeader = () => (
+    <View>
+      {/* Hero */}
+      <View style={[styles.hero, { paddingTop: insets.top + Spacing.base }]}>
+        <Logo size="lg" light style={styles.heroLogo} />
+        <Text variant="body" color="#E5E5F5" style={styles.heroSub}>
+          {t.discoverHeading}
+        </Text>
+        <Pressable style={styles.searchBar} onPress={() => goSearch()}>
+          <Ionicons name="search-outline" size={20} color={Colors.textMuted} />
+          <Text variant="body" color={Colors.textMuted} style={styles.searchText}>
+            {t.searchPlaceholder}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Category strip */}
+      <View style={styles.section}>
+        <Text variant="h2" color={Colors.text} style={styles.sectionTitle}>
+          {t.categories}
+        </Text>
+        {taxoError ? (
+          <Text variant="small" color={Colors.textMuted}>
+            {t.error}
+          </Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+            {categories.map((cat) => (
+              <CategoryBubble
+                key={cat.id}
+                category={cat}
+                label={localized(cat, 'name', locale)}
+                onPress={() => goSearch({ category: cat.slug })}
+              />
+            ))}
+          </ScrollView>
+        )}
+      </View>
+
+      {/* Recommended heading */}
+      <View style={styles.sectionRow}>
+        <Text variant="h2" color={Colors.text} numberOfLines={1} style={styles.sectionHeading}>
+          {t.recommended}
+        </Text>
+        <Pressable onPress={() => goSearch()} style={styles.seeAllBtn} hitSlop={6}>
+          <Text variant="small" color={Colors.primary} numberOfLines={1}>
+            {t.seeAll}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.fill}>
+        {renderHeader()}
+        <Loading />
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      style={styles.fill}
+      data={items}
+      keyExtractor={(it) => it.uuid}
+      numColumns={2}
+      columnWrapperStyle={styles.col}
+      contentContainerStyle={styles.list}
+      ListHeaderComponent={renderHeader}
+      renderItem={({ item }) => (
+        <View style={styles.cardCell}>
+          <ListingCard
+            item={item}
+            onPress={() => router.push(`/listing/${item.uuid}`)}
+            favorited={isAuthed && favoriteIds.has(item.uuid)}
+            onToggleFavorite={() => onFavorite(item.uuid)}
+          />
+        </View>
+      )}
+      ListEmptyComponent={
+        error ? (
+          <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />
+        ) : (
+          <EmptyState icon="cube-outline" title={t.emptyListings} subtitle={t.emptyListingsHint} />
+        )
+      }
+    />
+  );
+}
+
+function CategoryBubble({
+  category,
+  label,
+  onPress,
+}: {
+  category: Category;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.bubble} onPress={onPress}>
+      <View style={styles.bubbleIcon}>
+        <Ionicons name="grid-outline" size={24} color={Colors.primary} />
+      </View>
+      <Text variant="xsmall" color={Colors.textBody} center numberOfLines={2} style={styles.bubbleLabel}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  fill: { flex: 1, backgroundColor: Colors.background },
+  list: { paddingBottom: Spacing.xxxl },
+  col: { paddingHorizontal: Spacing.base, gap: Spacing.md, alignItems: 'stretch' },
+  cardCell: { flex: 1, marginBottom: Spacing.md },
+  hero: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
+  },
+  heroLogo: { marginBottom: Spacing.xs },
+  heroSub: { marginBottom: Spacing.lg },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    ...Shadow.md,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  searchText: { marginLeft: Spacing.sm },
+  section: { paddingHorizontal: Spacing.base, marginTop: Spacing.lg },
+  sectionRow: {
+    paddingHorizontal: Spacing.base,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  sectionHeading: { flex: 1, marginRight: Spacing.sm },
+  seeAllBtn: { flexShrink: 0 },
+  sectionTitle: { marginBottom: Spacing.md },
+  strip: { paddingRight: Spacing.base },
+  bubble: { width: 96, alignItems: 'center', marginRight: Spacing.md },
+  bubbleIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
   },
+  bubbleLabel: { lineHeight: 16, minHeight: 32 },
 });

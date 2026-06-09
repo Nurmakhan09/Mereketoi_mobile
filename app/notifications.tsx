@@ -1,0 +1,275 @@
+import { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, FlatList, Pressable, Linking, Alert } from 'react-native';
+import { router, useNavigation } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+import { Text } from '@/components/ui/Text';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { FormField } from '@/components/ui/FormField';
+import { Sheet } from '@/components/ui/Sheet';
+import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
+import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useI18n } from '@/locales';
+import {
+  fetchNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  fetchReminders,
+  createReminder,
+  toggleReminder,
+  deleteReminder,
+} from '@/services/api/notifications';
+import { formatDate } from '@/utils/format';
+import { AppNotification, Reminder } from '@/types';
+
+type Tab = 'inbox' | 'reminders';
+
+/** Inbox + Reminders in one screen. A "+" adds a reminder (notifies at 9:00 on its date). */
+export default function NotificationsScreen() {
+  const { t } = useI18n();
+  const navigation = useNavigation();
+  const [tab, setTab] = useState<Tab>('inbox');
+
+  // inbox
+  const [items, setItems] = useState<AppNotification[]>([]);
+  const [unread, setUnread] = useState(0);
+  // reminders
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // add-reminder sheet
+  const [addOpen, setAddOpen] = useState(false);
+  const [rTitle, setRTitle] = useState('');
+  const [rDate, setRDate] = useState('');
+  const [rNote, setRNote] = useState('');
+  const [rErrors, setRErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [inbox, rem] = await Promise.all([fetchNotifications({ limit: 50 }), fetchReminders()]);
+      setItems(inbox.items);
+      setUnread(inbox.unread);
+      setReminders(rem.items);
+      navigation.setOptions({ title: t.notificationsTitle });
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation, t.notificationsTitle]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const onItem = async (n: AppNotification) => {
+    if (!n.is_read) {
+      setItems((prev) => prev.map((i) => (i.id === n.id ? { ...i, is_read: true } : i)));
+      setUnread((u) => Math.max(0, u - 1));
+      markNotificationRead(n.id).catch(() => {});
+    }
+    const url = n.action_url ?? '';
+    if (!url) return;
+    // Map the backend's web action paths to in-app routes (booking notifications
+    // deep-link to /app/toi?step=N or /app/calendar/{date}); else open externally.
+    if (url.startsWith('/app/toi') || url.startsWith('/ru/app/toi')) {
+      router.push('/toi');
+    } else if (url.startsWith('/app/calendar') || url.startsWith('/ru/app/calendar')) {
+      router.push('/calendars');
+    } else if (/^https?:\/\//.test(url)) {
+      Linking.openURL(url).catch(() => {});
+    }
+  };
+
+  const onMarkAll = () => {
+    setItems((prev) => prev.map((i) => ({ ...i, is_read: true })));
+    setUnread(0);
+    markAllNotificationsRead().catch(() => {});
+  };
+
+  const onAddReminder = async () => {
+    setSaving(true);
+    setRErrors({});
+    try {
+      await createReminder({ title: rTitle.trim(), remind_at: rDate.trim(), note: rNote.trim() || undefined });
+      setAddOpen(false);
+      setRTitle('');
+      setRDate('');
+      setRNote('');
+      await load();
+      setTab('reminders');
+    } catch (e: any) {
+      if (e?.fieldErrors) setRErrors(e.fieldErrors);
+      else Alert.alert(t.error, t.errorNetwork);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onToggleReminder = (r: Reminder) => {
+    setReminders((prev) => prev.map((i) => (i.id === r.id ? { ...i, is_done: !i.is_done } : i)));
+    toggleReminder(r.id).catch(() => void load());
+  };
+
+  const onDeleteReminder = (r: Reminder) =>
+    Alert.alert('', t.confirmDelete, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.delete,
+        style: 'destructive',
+        onPress: () => {
+          setReminders((prev) => prev.filter((i) => i.id !== r.id));
+          deleteReminder(r.id).catch(() => void load());
+        },
+      },
+    ]);
+
+  const renderHeader = () => (
+    <View style={styles.headerWrap}>
+      <View style={styles.segment}>
+        {(['inbox', 'reminders'] as Tab[]).map((tb) => (
+          <Pressable key={tb} style={[styles.seg, tab === tb && styles.segActive]} onPress={() => setTab(tb)}>
+            <Text variant="button" color={tab === tb ? Colors.white : Colors.textMuted}>
+              {tb === 'inbox' ? t.notificationsTitle : t.remindersTitle}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {tab === 'inbox' && unread > 0 ? (
+        <Pressable onPress={onMarkAll} hitSlop={8} style={styles.markAll}>
+          <Text variant="small" color={Colors.primary}>
+            {t.markAllRead}
+          </Text>
+        </Pressable>
+      ) : null}
+      {tab === 'reminders' ? (
+        <Button title={t.addReminder} icon="add" onPress={() => setAddOpen(true)} style={styles.addBtn} />
+      ) : null}
+    </View>
+  );
+
+  if (loading) return <Loading />;
+  if (error) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
+
+  return (
+    <View style={styles.fill}>
+      {tab === 'inbox' ? (
+        <FlatList
+          data={items}
+          keyExtractor={(it) => String(it.id)}
+          ListHeaderComponent={renderHeader}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <Pressable style={styles.row} onPress={() => onItem(item)}>
+              {!item.is_read ? <View style={styles.dot} /> : <View style={styles.dotSpace} />}
+              <View style={styles.rowBody}>
+                <Text variant="small" color={Colors.text}>
+                  {item.title}
+                </Text>
+                {item.body ? (
+                  <Text variant="xsmall" color={Colors.textMuted} numberOfLines={2} style={styles.body}>
+                    {item.body}
+                  </Text>
+                ) : null}
+                <Text variant="xsmall" color={Colors.textFaint} style={styles.time}>
+                  {formatDate(item.created_at)}
+                </Text>
+              </View>
+            </Pressable>
+          )}
+          ListEmptyComponent={<EmptyState icon="notifications-outline" title={t.emptyNotifications} />}
+        />
+      ) : (
+        <FlatList
+          data={reminders}
+          keyExtractor={(it) => String(it.id)}
+          ListHeaderComponent={renderHeader}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <Card style={styles.remRow} padded>
+              <Pressable onPress={() => onToggleReminder(item)} hitSlop={6}>
+                <Ionicons
+                  name={item.is_done ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={24}
+                  color={item.is_done ? Colors.success : Colors.textFaint}
+                />
+              </Pressable>
+              <View style={styles.remBody}>
+                <Text
+                  variant="body"
+                  color={item.is_done ? Colors.textFaint : Colors.text}
+                  style={item.is_done ? styles.strike : undefined}
+                >
+                  {item.title}
+                </Text>
+                <Text variant="xsmall" color={Colors.textMuted}>
+                  {formatDate(item.remind_at)}
+                  {item.note ? ` · ${item.note}` : ''}
+                </Text>
+              </View>
+              <Pressable onPress={() => onDeleteReminder(item)} hitSlop={6}>
+                <Ionicons name="trash-outline" size={20} color={Colors.error} />
+              </Pressable>
+            </Card>
+          )}
+          ListEmptyComponent={<EmptyState icon="alarm-outline" title={t.emptyReminders} />}
+        />
+      )}
+
+      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} title={t.addReminder}>
+        <FormField label={t.reminderTitle} value={rTitle} onChangeText={setRTitle} required error={rErrors.title} />
+        <FormField
+          label={t.reminderDate}
+          value={rDate}
+          onChangeText={setRDate}
+          placeholder="2026-07-01"
+          required
+          error={rErrors.remind_at}
+        />
+        <FormField label={t.reminderNote} value={rNote} onChangeText={setRNote} multiline />
+        <Text variant="xsmall" color={Colors.textMuted} style={styles.remHint}>
+          {t.reminderNotifyHint}
+        </Text>
+        <Button title={t.save} loading={saving} onPress={onAddReminder} />
+      </Sheet>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  fill: { flex: 1, backgroundColor: Colors.background },
+  headerWrap: { padding: Spacing.base },
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceMuted,
+    borderRadius: Radius.md,
+    padding: 4,
+  },
+  seg: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.sm, alignItems: 'center' },
+  segActive: { backgroundColor: Colors.primary },
+  markAll: { alignSelf: 'flex-end', marginTop: Spacing.md },
+  addBtn: { marginTop: Spacing.md },
+  list: { paddingBottom: Spacing.xxxl },
+  row: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceMuted,
+  },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary, marginTop: 6, marginRight: Spacing.sm },
+  dotSpace: { width: 8, marginRight: Spacing.sm },
+  rowBody: { flex: 1 },
+  body: { marginTop: 2 },
+  time: { marginTop: Spacing.xs },
+  remRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.base, marginBottom: Spacing.md, gap: Spacing.md },
+  remBody: { flex: 1 },
+  strike: { textDecorationLine: 'line-through' },
+  remHint: { marginBottom: Spacing.md },
+});
