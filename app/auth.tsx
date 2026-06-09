@@ -32,9 +32,18 @@ export default function AuthScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<'form' | 'google' | null>(null);
 
-  const goBack = () => {
+  // After a SUCCESSFUL auth → go to the intended destination.
+  const afterAuth = () => {
     if (returnTo) router.replace(returnTo as never);
     else if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
+
+  // The ✕ (cancel) must NEVER use returnTo: some gated returnTo targets (e.g. the
+  // "+" Create tab) bounce guests straight back to /auth, so honoring returnTo on
+  // close trapped the user on this screen. Just dismiss to a safe public screen.
+  const onClose = () => {
+    if (router.canGoBack()) router.back();
     else router.replace('/');
   };
 
@@ -70,7 +79,7 @@ export default function AuthScreen() {
           ? await apiLogin({ login: loginVal.trim(), password })
           : await apiRegister({ login: loginVal.trim(), password, name: name.trim() });
       await setSession(res.token, res.user);
-      goBack();
+      afterAuth();
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.fieldErrors) setErrors(err.fieldErrors);
@@ -101,7 +110,7 @@ export default function AuthScreen() {
         router.replace({ pathname: '/set-nickname', params: returnTo ? { returnTo } : {} });
         return;
       }
-      goBack();
+      afterAuth();
     } catch {
       Alert.alert(t.error, t.authFailed);
     } finally {
@@ -112,7 +121,7 @@ export default function AuthScreen() {
   return (
     <Screen scroll padded edgeTop>
       <View style={styles.closeRow}>
-        <Pressable onPress={goBack} hitSlop={8} style={styles.close}>
+        <Pressable onPress={onClose} hitSlop={8} style={styles.close}>
           <Ionicons name="close" size={26} color={Colors.textMuted} />
         </Pressable>
       </View>
