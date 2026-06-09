@@ -170,6 +170,17 @@ export default function EditListingScreen() {
     }
   };
 
+  // Refresh ONLY the images after an image op — a full load() would re-pull the
+  // listing and overwrite the user's in-progress (unsaved) form fields.
+  const refreshImages = async () => {
+    try {
+      const d = await fetchMyListing(uuid);
+      setData((prev) => (prev ? { ...prev, images: d.images } : d));
+    } catch (e) {
+      handleApiError(e);
+    }
+  };
+
   // All required fields filled to the backend's rules? Publish + Preview stay
   // disabled until this is true, so nothing incomplete is ever sent/saved.
   const isComplete = (): boolean => {
@@ -221,7 +232,7 @@ export default function EditListingScreen() {
     if (!asset) return;
     try {
       await uploadListingImage(uuid, asset);
-      await load();
+      await refreshImages();
     } catch (e) {
       handleApiError(e);
     }
@@ -236,7 +247,7 @@ export default function EditListingScreen() {
         onPress: async () => {
           try {
             await deleteListingImage(uuid, id);
-            await load();
+            await refreshImages();
           } catch (e) {
             handleApiError(e);
           }
@@ -251,7 +262,7 @@ export default function EditListingScreen() {
     const order = [id, ...data.images.filter((i) => i.id !== id).map((i) => i.id)];
     try {
       await reorderListingImages(uuid, order);
-      await load();
+      await refreshImages();
     } catch (e) {
       handleApiError(e);
     }
