@@ -14,7 +14,7 @@ import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
 import { fetchWeddingPlan, saveWeddingPlan } from '@/services/api/weddingPlan';
-import { cancelBooking, confirmChange, rejectChange } from '@/services/api/bookings';
+import { cancelBooking, confirmChange, rejectChange, requestChange } from '@/services/api/bookings';
 import { formatPrice } from '@/utils/format';
 import { WeddingPlan, WeddingPlanResponse, BookingCard } from '@/types';
 
@@ -69,6 +69,10 @@ export default function ToiScreen() {
   const setMeta = (patch: Partial<WeddingPlan['meta']>) => setPlan((p) => (p ? { ...p, meta: { ...p.meta, ...patch } } : p));
   const setItem = (key: string, patch: Partial<WeddingPlan['items'][number]>) =>
     setPlan((p) => (p ? { ...p, items: p.items.map((it) => (it.key === key ? { ...it, ...patch } : it)) } : p));
+  const setCustom = (i: number, patch: Partial<WeddingPlan['custom_items'][number]>) =>
+    setPlan((p) => (p ? { ...p, custom_items: p.custom_items.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) } : p));
+  const addCustom = () =>
+    setPlan((p) => (p ? { ...p, custom_items: [...p.custom_items, { title: '', done: false, note: '' }] } : p));
 
   const cityOptions = data.cities.map((c) => ({ value: c.id, label: localized(c, 'name', locale) }));
 
@@ -123,6 +127,23 @@ export default function ToiScreen() {
           );
         })}
 
+        {/* Custom tasks */}
+        <Text variant="h3" color={Colors.text} style={styles.section}>{t.toiCustomTitle}</Text>
+        {plan.custom_items.map((c, i) => (
+          <Card key={i} padded style={styles.itemCard}>
+            <View style={styles.itemHead}>
+              <Pressable style={styles.check} onPress={() => setCustom(i, { done: !c.done })} hitSlop={6}>
+                <Ionicons name={c.done ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={c.done ? Colors.success : Colors.textFaint} />
+              </Pressable>
+              <View style={styles.itemTitle}>
+                <FormField label="" value={c.title} onChangeText={(v) => setCustom(i, { title: v })} placeholder={t.toiCustomPlaceholder} maxLength={80} />
+              </View>
+            </View>
+            <FormField label={t.toiNotePlaceholder} value={c.note} onChangeText={(v) => setCustom(i, { note: v })} maxLength={200} />
+          </Card>
+        ))}
+        <Button title={t.toiAddItem} variant="outline" icon="add" small onPress={addCustom} style={styles.addBtn} />
+
         <Button title={t.toiSave} loading={saving} onPress={onSave} style={styles.saveBtn} />
         <Pressable style={styles.histLink} onPress={() => router.push('/toi/history')}>
           <Ionicons name="time-outline" size={18} color={Colors.primary} />
@@ -137,6 +158,12 @@ export default function ToiScreen() {
 function BookingCardView({ card, onChanged }: { card: BookingCard; onChanged: () => void }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [cDate, setCDate] = useState(card.date);
+  const [cPrice, setCPrice] = useState(card.price != null ? String(card.price) : '');
+  const [cPaid, setCPaid] = useState(card.paid != null ? String(card.paid) : '');
+  const [cTime, setCTime] = useState(card.time);
+  const [cAddr, setCAddr] = useState(card.address);
 
   const statusLabel: Record<string, string> = {
     pending: t.bookingStatusPending,
@@ -211,6 +238,37 @@ function BookingCardView({ card, onChanged }: { card: BookingCard; onChanged: ()
         <Text variant="xsmall" color={Colors.textMuted} style={styles.bkHint}>{t.changeAwaiting}</Text>
       ) : null}
 
+      {/* Client-initiated change request (when nothing is staged) */}
+      {card.status === 'accepted' && !card.pending ? (
+        <>
+          <Button title={t.bookingEdit} small variant="ghost" onPress={() => setEditing((e) => !e)} disabled={busy} />
+          {editing ? (
+            <View style={styles.changeBox}>
+              <FormField label={t.toiMetaDate} value={cDate} onChangeText={setCDate} placeholder="2026-08-01" />
+              <FormField label={t.dealAgreed} value={cPrice} onChangeText={(v) => setCPrice(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" />
+              <FormField label={t.dealPaid} value={cPaid} onChangeText={(v) => setCPaid(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" />
+              <FormField label={t.dealTime} value={cTime} onChangeText={setCTime} placeholder="18:00" maxLength={5} />
+              <FormField label={t.dealAddress} value={cAddr} onChangeText={setCAddr} />
+              <Button
+                title={t.changeRequest}
+                small
+                loading={busy}
+                onPress={() => act(async () => {
+                  await requestChange(card.id, {
+                    date: cDate,
+                    price: cPrice ? parseInt(cPrice, 10) : 0,
+                    paid: cPaid ? parseInt(cPaid, 10) : 0,
+                    time: cTime,
+                    address: cAddr,
+                  });
+                  setEditing(false);
+                })}
+              />
+            </View>
+          ) : null}
+        </>
+      ) : null}
+
       {(card.status === 'pending' || card.status === 'accepted') ? (
         <Button title={t.bookingCancel} small variant="ghost" onPress={() => act(() => cancelBooking(card.id))} disabled={busy} style={styles.cancelBtn} />
       ) : null}
@@ -237,6 +295,7 @@ const styles = StyleSheet.create({
   itemHead: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
   check: { marginRight: Spacing.sm },
   itemTitle: { flex: 1 },
+  addBtn: { marginTop: Spacing.xs, alignSelf: 'flex-start' },
   saveBtn: { marginTop: Spacing.base },
   histLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Spacing.lg },
   histLabel: { marginLeft: Spacing.xs },

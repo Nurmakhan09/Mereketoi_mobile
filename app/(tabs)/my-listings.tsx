@@ -87,6 +87,10 @@ export default function MyListingsTab() {
   };
 
   const filtered = items.filter((i) => i.status === tab);
+  // One-listing model: a user has at most one non-deleted listing. If one exists,
+  // the "+ New" CTA reopens its editor (the backend rejects a 2nd create).
+  const existing = items.find((i) => i.status !== 'deleted');
+  const onPrimary = () => router.push(existing ? `/my/${existing.uuid}/edit` : '/create');
 
   const header = (
     <View style={{ paddingTop: insets.top + Spacing.base }}>
@@ -96,7 +100,7 @@ export default function MyListingsTab() {
       <Text variant="h1" color={Colors.text} style={styles.heading}>
         {t.myListings}
       </Text>
-      <Button title={t.newListing} icon="add" onPress={() => router.push('/create')} style={styles.newBtn} />
+      <Button title={existing ? t.menuMyListings : t.newListing} icon={existing ? 'create-outline' : 'add'} onPress={onPrimary} style={styles.newBtn} />
 
       {stats ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow}>

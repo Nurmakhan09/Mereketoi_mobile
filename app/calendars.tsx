@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useNavigation } from 'expo-router';
@@ -25,6 +25,7 @@ export default function CalendarsHubScreen() {
   const [items, setItems] = useState<OwnerListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const redirected = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,7 +33,14 @@ export default function CalendarsHubScreen() {
     try {
       const res = await fetchMyListings();
       // Calendars only make sense for non-archived/blocked listings.
-      setItems(res.items.filter((i) => ['active', 'draft', 'expired'].includes(i.status)));
+      const eligible = res.items.filter((i) => ['active', 'draft', 'expired'].includes(i.status));
+      // One-listing model: skip the hub and open the single calendar directly.
+      if (eligible.length === 1 && !redirected.current) {
+        redirected.current = true;
+        router.replace(`/my/${eligible[0].uuid}/calendar`);
+        return;
+      }
+      setItems(eligible);
       navigation.setOptions({ title: t.calendarTitle });
     } catch {
       setError(true);
