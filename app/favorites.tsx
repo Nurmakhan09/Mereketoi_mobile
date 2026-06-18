@@ -1,10 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 
-import { Text } from '@/components/ui/Text';
-import { Logo } from '@/components/Logo';
 import { ListingCard } from '@/components/ListingCard';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { Colors, Spacing } from '@/constants/theme';
@@ -15,9 +12,13 @@ import { fetchFavorites } from '@/services/api/favorites';
 import { GuestGate } from '@/components/GuestGate';
 import { ListingCard as ListingCardType } from '@/types';
 
+/**
+ * Favorites — reached from the profile menu as a pushed page with a back button
+ * (design prompt §4/§12: not a bottom tab). The native header carries the title.
+ */
 export default function FavoritesScreen() {
   const { t } = useI18n();
-  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const status = useAuthStore((s) => s.status);
   const setAll = useFavoritesStore((s) => s.setAll);
   const toggleFav = useFavoritesStore((s) => s.toggle);
@@ -25,6 +26,10 @@ export default function FavoritesScreen() {
   const [items, setItems] = useState<ListingCardType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({ title: t.favoritesTitle });
+  }, [navigation, t.favoritesTitle]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,12 +62,6 @@ export default function FavoritesScreen() {
 
   return (
     <View style={styles.fill}>
-      <View style={[styles.header, { paddingTop: insets.top + Spacing.base }]}>
-        <Logo size="sm" style={styles.headerLogo} />
-        <Text variant="h1" color={Colors.text}>
-          {t.favoritesTitle}
-        </Text>
-      </View>
       <FlatList
         data={items}
         keyExtractor={(it) => it.uuid}
@@ -101,9 +100,7 @@ export default function FavoritesScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
-  header: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.base },
-  headerLogo: { marginBottom: Spacing.sm },
-  list: { paddingBottom: Spacing.xxxl },
+  list: { paddingTop: Spacing.base, paddingBottom: Spacing.xxxl },
   col: { paddingHorizontal: Spacing.base, gap: Spacing.md },
   cardCell: { flex: 1, marginBottom: Spacing.md },
 });

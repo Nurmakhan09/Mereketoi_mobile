@@ -13,12 +13,11 @@ import { useAuthStore } from '@/stores/authStore';
 import { updateProfile } from '@/services/api/auth';
 import { ApiError } from '@/types/api';
 
-const NICK_RE = /^[a-z0-9_]{3,30}$/;
-
 /**
- * Pick a nickname — shown right after a fresh Google sign-up (OAuth users are
- * created with a NULL nickname; the website lets them set it later, we ask up
- * front in the app). Mirrors the website nickname rule: a–z 0–9 _, 3–30, unique.
+ * Enter your name — shown right after a fresh Google sign-up (OAuth users are
+ * created with a NULL name; the website lets them set it later, we ask up front
+ * in the app). Free-form person name (backend parity 2026-06-17: kk/ru/latin,
+ * min 2 / max 120, not a unique handle).
  */
 export default function SetNicknameScreen() {
   const { t } = useI18n();
@@ -38,7 +37,7 @@ export default function SetNicknameScreen() {
   const onSave = async () => {
     const v = nickname.trim();
     if (!v) { setError(t.nameRequired); return; }
-    if (!NICK_RE.test(v)) { setError(t.nameInvalid); return; }
+    if (v.length < 2) { setError(t.nameInvalid); return; }
     setBusy(true);
     setError(undefined);
     try {
@@ -69,9 +68,10 @@ export default function SetNicknameScreen() {
           label={t.nameField}
           placeholder={t.namePlaceholder}
           hint={t.nameHint}
-          autoCapitalize="none"
+          autoCapitalize="words"
+          maxLength={120}
           value={nickname}
-          onChangeText={(v) => setNickname(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+          onChangeText={setNickname}
           error={error}
         />
         <Button title={t.save} loading={busy} onPress={onSave} style={styles.save} />

@@ -99,9 +99,9 @@ const kk = {
   passwordField: 'Құпия сөз',
   passwordPlaceholder: 'Құпия сөзіңіз',
   passwordNewPlaceholder: 'Кемінде 8 таңба',
-  nameField: 'Никнейм',
-  namePlaceholder: 'мысалы: nurlan_92',
-  nameHint: 'Тек кіші латын әріптері мен цифрлар, _ (3–30 таңба). Мысалы: zhibek, zhibek00.',
+  nameField: 'Аты',
+  namePlaceholder: 'мысалы: Нұрлан',
+  nameHint: 'Сізді осы атпен көреді. Қазақша немесе орысша жазуға болады.',
   confirmPasswordField: 'Құпия сөзді растау',
   loginAction: 'Кіру',
   registerAction: 'Тіркелу',
@@ -116,7 +116,7 @@ const kk = {
   passwordRequired: 'Құпия сөз енгізіңіз.',
   passwordTooShort: 'Құпия сөз кемінде 8 таңба болуы керек.',
   passwordMismatch: 'Құпия сөздер сәйкес келмейді.',
-  nameRequired: 'Никнеймді енгізіңіз.',
+  nameRequired: 'Атыңызды енгізіңіз.',
 
   // Create / edit form
   createTitle: 'Хабарландыру беру',
@@ -256,8 +256,8 @@ const kk = {
   calPastReadonlyHint: 'Өткен күн — тек қарап шығуға (есеп).',
   calStatusLabel: 'Осы күнгі күй',
   calChangeRequested: 'Өзгеріс сұралды',
-  nameInvalid: 'Никнейм қате форматта (тек a–z, 0–9, _, 3–30 таңба).',
-  setNicknameTitle: 'Никнейм таңдаңыз',
+  nameInvalid: 'Аты тым қысқа (кемінде 2 таңба).',
+  setNicknameTitle: 'Атыңызды енгізіңіз',
   setNicknameSub: 'Сізді осы атпен көреді. Кейін профильде өзгерте аласыз.',
   setNicknameLater: 'Кейінірек',
 

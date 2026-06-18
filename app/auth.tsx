@@ -63,10 +63,10 @@ export default function AuthScreen() {
     else if (mode === 'register' && password.length < 8) e.password = t.passwordTooShort;
     if (mode === 'register') {
       const nm = name.trim();
+      // Free-form person name (backend parity 2026-06-17: kk/ru/latin, not a
+      // unique handle; min 2 / max 120). Cyrillic names like "Нұрлан" are valid.
       if (!nm) e.name = t.nameRequired;
-      // Nickname rule (same as backend): lowercase latin + digits + _, 3–30. No
-      // Cyrillic / uppercase (e.g. "ЯРШИУ", "zHDA" are invalid; "zhibek00" is fine).
-      else if (!/^[a-z0-9_]{3,30}$/.test(nm)) e.name = t.nameInvalid;
+      else if (nm.length < 2) e.name = t.nameInvalid;
       if (password !== confirm) e.confirm = t.passwordMismatch;
     }
     setErrors(e);
@@ -108,8 +108,8 @@ export default function AuthScreen() {
       await setItem(StorageKeys.token, res.token);
       const user = await fetchMe();
       await setSession(res.token, user);
-      // Fresh Google sign-ups have no nickname yet (OAuth creates it as NULL) —
-      // ask them to pick one before continuing (website lets them set it later).
+      // Fresh Google sign-ups have no name yet (OAuth creates it as NULL) —
+      // ask them to enter one before continuing (website lets them set it later).
       if (!user.name?.trim()) {
         router.replace({ pathname: '/set-nickname', params: returnTo ? { returnTo } : {} });
         return;
@@ -169,9 +169,10 @@ export default function AuthScreen() {
             label={t.nameField}
             placeholder={t.namePlaceholder}
             hint={t.nameHint}
-            autoCapitalize="none"
+            autoCapitalize="words"
+            maxLength={120}
             value={name}
-            onChangeText={(v) => setName(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+            onChangeText={setName}
             error={errors.name}
           />
         ) : null}

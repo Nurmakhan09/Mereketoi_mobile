@@ -11,10 +11,11 @@ import { useMyListingStore } from '@/stores/myListingStore';
 import { useI18n } from '@/locales';
 
 /**
- * Auth-aware bottom nav — mirrors the website's mobile cabinet nav (layouts/app.php):
- *  Guest:             Home · Search · Жариялау(+) · Favorites · Profile
- *  Authed (no ad):    Search · Жариялау(+) · Favorites · Profile
- *  Authed + published: Search · Күнтізбе · Хабарландыруым · Favorites · Profile
+ * Auth-aware bottom nav (design prompt §3 — 5 slots, no Favorites tab; Favorites
+ * lives in the profile menu as a pushed page):
+ *  Guest:             Home · Search · Жариялау(+) · Profile
+ *  Authed (no ad):    Search · Жариялау(+) · Profile
+ *  Authed + published: Search · Күнтізбе · Хабарландыруым · Profile
  * Calendar shows only for a PUBLISHED provider; the middle CTA flips from the
  * raised "+" (create) to "Хабарландыруым" (opens the single ad) once published.
  * Active tab is navy; inactive icons are uniform grey (design prompt §3 — gold is
@@ -117,15 +118,6 @@ export default function TabLayout() {
             ) : (
               <CreateTabButton onPress={() => router.navigate('/create')} />
             ),
-        }}
-      />
-      <Tabs.Screen
-        name="favorites"
-        options={{
-          title: t.tabFavorites,
-          tabBarIcon: ({ focused }) => (
-            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={24} color={focused ? Colors.primary : Colors.tabInactive} />
-          ),
         }}
       />
       <Tabs.Screen

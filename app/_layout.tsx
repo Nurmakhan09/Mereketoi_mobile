@@ -70,6 +70,7 @@ export default function RootLayout() {
             <Stack.Screen name="calendars" options={pushedHeader} />
             <Stack.Screen name="calendar-day" />
             <Stack.Screen name="set-nickname" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="favorites" options={pushedHeader} />
             <Stack.Screen name="toi/index" options={pushedHeader} />
             <Stack.Screen name="toi/history" options={pushedHeader} />
             <Stack.Screen name="invite/[token]" options={pushedHeader} />
