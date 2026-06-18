@@ -58,6 +58,10 @@ export const Endpoints = {
   notificationsReadAll: '/notifications/read-all',
   notificationPreferences: '/notification-preferences',
 
+  // Push device tokens (Bearer)
+  pushRegister: '/push/register',
+  pushUnregister: '/push/unregister',
+
   // Reminders (Bearer)
   reminders: '/reminders',
   reminder: (id: number) => `/reminders/${id}`,

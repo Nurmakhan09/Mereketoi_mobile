@@ -11,12 +11,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+        "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "kz.mereketoi.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#000099",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -51,6 +54,13 @@
         "expo-image-picker",
         {
           "photosPermission": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#000099"
         }
       ]
     ],

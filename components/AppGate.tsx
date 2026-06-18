@@ -7,6 +7,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { Loading, EmptyState } from '@/components/ui/StateViews';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/locales';
+import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 
 /**
  * Startup gate: load app-config + locale + auth session, then enforce
@@ -27,6 +28,9 @@ export function AppGate({ children }: { children: ReactNode }) {
       setBooted(true);
     })();
   }, [loadConfig, initLocale, bootstrap]);
+
+  // Native push: register the device once authed; deep-link on tap (shared mapper).
+  usePushNotifications(booted);
 
   if (!booted) {
     return (

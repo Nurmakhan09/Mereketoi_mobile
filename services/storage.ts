@@ -51,4 +51,5 @@ export const StorageKeys = {
   token: 'mk_token',
   user: 'mk_user',
   locale: 'mk_locale',
+  pushToken: 'mk_push_token',
 } as const;

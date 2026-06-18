@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Pressable, Linking, Alert } from 'react-native';
-import { router, useNavigation } from 'expo-router';
+import { View, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
+import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/ui/Text';
@@ -21,6 +21,7 @@ import {
   deleteReminder,
 } from '@/services/api/notifications';
 import { formatDate } from '@/utils/format';
+import { navigateFromActionUrl } from '@/utils/notificationLink';
 import { AppNotification, Reminder } from '@/types';
 
 type Tab = 'inbox' | 'reminders';
@@ -74,20 +75,8 @@ export default function NotificationsScreen() {
       setUnread((u) => Math.max(0, u - 1));
       markNotificationRead(n.id).catch(() => {});
     }
-    const url = n.action_url ?? '';
-    if (!url) return;
-    // Map the backend's web action paths to in-app routes (booking notifications
-    // deep-link to /app/toi?step=N or /app/calendar/{date}); else open externally.
-    if (url.startsWith('/app/toi') || url.startsWith('/ru/app/toi')) {
-      router.push('/toi');
-    } else if (url.startsWith('/app/calendar') || url.startsWith('/ru/app/calendar')) {
-      // Booking notifications deep-link to a specific day (/app/calendar/{date}).
-      const m = url.match(/\/app\/calendar\/(\d{4}-\d{2}-\d{2})/);
-      if (m) router.push({ pathname: '/calendar-day', params: { date: m[1] } });
-      else router.push('/calendar');
-    } else if (/^https?:\/\//.test(url)) {
-      Linking.openURL(url).catch(() => {});
-    }
+    // Deep-link via the shared mapper (same logic as a push-notification tap).
+    navigateFromActionUrl(n.action_url);
   };
 
   const onMarkAll = () => {

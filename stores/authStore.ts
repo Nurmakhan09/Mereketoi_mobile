@@ -9,6 +9,7 @@ import { User } from '@/types';
 import { getItem, setItem, deleteItem, StorageKeys } from '@/services/storage';
 import { setUnauthorizedHandler } from '@/services/api/client';
 import { fetchMe, logout as apiLogout } from '@/services/api/auth';
+import { unregisterPushToken } from '@/services/api/push';
 
 export type AuthStatus = 'loading' | 'guest' | 'authed';
 
@@ -77,6 +78,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    // Drop this device's push token first, while the Bearer token is still valid,
+    // so the backend stops pushing to it. Best-effort — never blocks logout.
+    try {
+      const pushToken = await getItem(StorageKeys.pushToken);
+      if (pushToken) {
+        await unregisterPushToken(pushToken).catch(() => {});
+        await deleteItem(StorageKeys.pushToken);
+      }
+    } catch {
+      // ignore — logout proceeds regardless
+    }
     try {
       await apiLogout();
     } catch {
