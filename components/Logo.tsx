@@ -3,9 +3,11 @@ import { Text } from './ui/Text';
 import { Colors, Typography } from '@/constants/theme';
 
 /**
- * Brand wordmark — "mereke" navy + "toi" gold, matching the website logo
- * (app/Views/partials/auth_box.php + site_footer.php). Used in screen headers.
- * `light` renders white "mereke" for use over the navy hero.
+ * Brand wordmark — the whole "mereketoi" is navy (design prompt §2.1/§3/§7:
+ * "логотип mereketoi түгел көк"; gold is accent-only). `light` renders the whole
+ * wordmark white for use over the navy hero.
+ * NOTE: the web logo still renders "toi" in gold — align the web if full parity
+ * is wanted.
  */
 export function Logo({
   size = 'md',
@@ -17,9 +19,9 @@ export function Logo({
   style?: ViewStyle;
 }) {
   const fontSize = size === 'lg' ? 28 : size === 'sm' ? 18 : 22;
-  // Over the navy hero the whole wordmark is white; elsewhere it's navy "mereke" + gold "toi".
+  // Whole wordmark navy (or white over the navy hero) — gold is accent-only.
   const base = light ? Colors.white : Colors.text;
-  const accent = light ? Colors.white : Colors.secondary;
+  const accent = base;
   return (
     <View style={[styles.row, style]}>
       <Text style={[styles.word, { fontSize, color: base }]}>mereke</Text>

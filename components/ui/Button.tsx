@@ -78,7 +78,7 @@ function variantStyle(variant: Variant, disabled: boolean) {
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
+    minHeight: 52, // design prompt §3: button height ≥ 52
     borderRadius: Radius.md,
     borderWidth: 1,
     alignItems: 'center',

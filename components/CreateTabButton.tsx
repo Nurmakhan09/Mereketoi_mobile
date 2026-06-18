@@ -28,8 +28,8 @@ export function ListingTabButton({
   active?: boolean;
   onPress?: (e: GestureResponderEvent) => void;
 }) {
-  // Match the sibling tabs: navy when active, gold when not.
-  const color = active ? Colors.primary : Colors.secondary;
+  // Match the sibling tabs: navy when active, uniform grey when not (design prompt §3).
+  const color = active ? Colors.primary : Colors.tabInactive;
   return (
     <Pressable onPress={onPress} style={styles.normalWrap} accessibilityRole="button" accessibilityLabel={label}>
       <Ionicons name={active ? 'albums' : 'albums-outline'} size={24} color={color} />

@@ -17,7 +17,8 @@ import { useI18n } from '@/locales';
  *  Authed + published: Search · Күнтізбе · Хабарландыруым · Favorites · Profile
  * Calendar shows only for a PUBLISHED provider; the middle CTA flips from the
  * raised "+" (create) to "Хабарландыруым" (opens the single ad) once published.
- * Active tab is navy; inactive icons are gold (owner preference).
+ * Active tab is navy; inactive icons are uniform grey (design prompt §3 — gold is
+ * accent-only, never the whole nav). The raised middle "+" stays gold.
  */
 export default function TabLayout() {
   const status = useAuthStore((s) => s.status);
@@ -55,7 +56,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarInactiveTintColor: Colors.tabInactive,
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
@@ -72,7 +73,7 @@ export default function TabLayout() {
           href: isAuthed ? null : '/',
           title: t.tabHome,
           tabBarIcon: ({ focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={focused ? Colors.primary : Colors.secondary} />
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={focused ? Colors.primary : Colors.tabInactive} />
           ),
         }}
       />
@@ -81,7 +82,7 @@ export default function TabLayout() {
         options={{
           title: t.tabSearch,
           tabBarIcon: ({ focused }) => (
-            <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={focused ? Colors.primary : Colors.secondary} />
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={focused ? Colors.primary : Colors.tabInactive} />
           ),
         }}
       />
@@ -92,7 +93,7 @@ export default function TabLayout() {
           title: t.calendarTitle,
           tabBarBadge: showCalendar && pendingBookings > 0 ? pendingBookings : undefined,
           tabBarIcon: ({ focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={focused ? Colors.primary : Colors.secondary} />
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={focused ? Colors.primary : Colors.tabInactive} />
           ),
         }}
       />
@@ -123,7 +124,7 @@ export default function TabLayout() {
         options={{
           title: t.tabFavorites,
           tabBarIcon: ({ focused }) => (
-            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={24} color={focused ? Colors.primary : Colors.secondary} />
+            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={24} color={focused ? Colors.primary : Colors.tabInactive} />
           ),
         }}
       />
@@ -132,7 +133,7 @@ export default function TabLayout() {
         options={{
           title: t.tabProfile,
           tabBarIcon: ({ focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={focused ? Colors.primary : Colors.secondary} />
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={focused ? Colors.primary : Colors.tabInactive} />
           ),
         }}
       />

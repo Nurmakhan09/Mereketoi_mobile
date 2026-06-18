@@ -158,8 +158,10 @@ export default function NotificationsScreen() {
           ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <Pressable style={styles.row} onPress={() => onItem(item)}>
-              {!item.is_read ? <View style={styles.dot} /> : <View style={styles.dotSpace} />}
+            <Pressable
+              style={[styles.row, !item.is_read && styles.rowUnread]}
+              onPress={() => onItem(item)}
+            >
               <View style={styles.rowBody}>
                 <Text variant="small" color={Colors.text}>
                   {item.title}
@@ -252,11 +254,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceMuted,
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.surfaceMuted,
+    backgroundColor: Colors.surface,
   },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary, marginTop: 6, marginRight: Spacing.sm },
-  dotSpace: { width: 8, marginRight: Spacing.sm },
+  // Unread row: navy border + navy-soft fill, no dot (design prompt §15).
+  rowUnread: { borderColor: Colors.primary, backgroundColor: Colors.primarySoft },
   rowBody: { flex: 1 },
   body: { marginTop: 2 },
   time: { marginTop: Spacing.xs },

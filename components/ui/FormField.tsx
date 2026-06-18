@@ -46,17 +46,26 @@ interface InputProps extends TextInputProps {
 }
 
 /** Labeled text input with hint/error + optional password eye toggle + counter. */
-export function FormField({ label, hint, error, required, secure, counter, style, ...rest }: InputProps) {
+export function FormField({ label, hint, error, required, secure, counter, style, onFocus, onBlur, ...rest }: InputProps) {
   const [hidden, setHidden] = useState(!!secure);
+  const [focused, setFocused] = useState(false);
   const count = typeof rest.value === 'string' ? rest.value.length : 0;
   return (
     <Field label={label} hint={hint} error={error} required={required}>
-      <View style={[styles.inputWrap, error ? styles.inputError : null]}>
+      <View style={[styles.inputWrap, focused && styles.inputFocused, error ? styles.inputError : null]}>
         <TextInput
           style={[styles.input, style]}
           placeholderTextColor={Colors.textFaint}
           secureTextEntry={hidden}
           {...rest}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
         />
         {secure ? (
           <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8} style={styles.eye}>
@@ -81,11 +90,20 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: Radius.sm,
     backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.md,
+  },
+  // Focus: navy border + soft navy halo (design prompt §3 Field).
+  inputFocused: {
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 2,
   },
   inputError: { borderColor: Colors.error },
   input: {
