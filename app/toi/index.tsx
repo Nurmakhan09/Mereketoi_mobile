@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Linking, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Linking, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -209,9 +209,19 @@ export default function ToiScreen() {
         })}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        {body}
-      </ScrollView>
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          style={styles.bodyScroll}
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+        >
+          {body}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Bottom nav */}
       <View style={styles.bottomNav}>
@@ -372,6 +382,8 @@ const styles = StyleSheet.create({
   dotCur: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   dotDone: { borderColor: Colors.success, backgroundColor: '#F0FDF4' },
   dotTxt: { fontWeight: '700' },
+  kav: { flex: 1 },
+  bodyScroll: { flex: 1 },
   body: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
   section: { marginBottom: Spacing.sm },
   itemCard: { marginBottom: Spacing.md },
