@@ -177,6 +177,7 @@ const ru: Strings = {
   actDelete: 'Удалить',
   actPublish: 'Опубликовать',
   actRenew: 'Продлить',
+  actExtend: 'Продлить',
   actPromote: 'Продвинуть',
 
   // Billing / packages

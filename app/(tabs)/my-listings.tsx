@@ -161,6 +161,13 @@ interface RowProps {
 function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnarchive, onDelete, onPromote }: RowProps) {
   const img = imageUrl(item.main_image);
   const s = item.status;
+  // Days until expiry (active listings). Drives the "X күн қалды" hint + the
+  // "Созу" CTA that appears as the free period runs out (≤5 days) — not only
+  // after it expires.
+  const daysLeft = s === 'active' && item.expires_at
+    ? Math.ceil((new Date(item.expires_at).getTime() - Date.now()) / 86400000)
+    : null;
+  const expiringSoon = daysLeft !== null && daysLeft <= 5;
   return (
     <Card style={styles.row} padded>
       <Pressable style={styles.rowTop} onPress={onEdit}>
@@ -174,11 +181,20 @@ function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnar
         <View style={styles.rowInfo}>
           <Text variant="h3" color={Colors.text} numberOfLines={2}>{item.title}</Text>
           <View style={styles.rowBadge}><StatusBadge status={s} t={t} /></View>
+          {daysLeft !== null ? (
+            <View style={styles.daysLeftRow}>
+              <Ionicons name="time-outline" size={13} color={expiringSoon ? Colors.warning : Colors.textFaint} />
+              <Text variant="xsmall" color={expiringSoon ? Colors.warning : Colors.textMuted} style={styles.daysLeftTxt}>
+                {Math.max(0, daysLeft)} {t.daysShort}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </Pressable>
 
       <View style={styles.rowActions}>
         {s === 'active' && item.public_code ? <ActBtn icon="eye-outline" label={t.actView} color={Colors.primary} onPress={onView} /> : null}
+        {expiringSoon ? <ActBtn icon="refresh-outline" label={t.actExtend} color={Colors.success} onPress={onPublish} /> : null}
         {s === 'active' ? <ActBtn icon="rocket-outline" label={t.actPromote} color={Colors.secondary} onPress={onPromote} /> : null}
         <ActBtn icon="create-outline" label={t.actEdit} color={Colors.primary} onPress={onEdit} />
         {s === 'draft' ? <ActBtn icon="rocket-outline" label={t.actPublish} color={Colors.success} onPress={onPublish} /> : null}
@@ -222,6 +238,8 @@ const styles = StyleSheet.create({
   rowImgPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   rowInfo: { flex: 1, marginLeft: Spacing.md },
   rowBadge: { marginTop: Spacing.sm },
+  daysLeftRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 3 },
+  daysLeftTxt: {},
   rowActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',

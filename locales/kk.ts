@@ -186,6 +186,7 @@ const kk = {
   actDelete: 'Жою',
   actPublish: 'Жариялау',
   actRenew: 'Жаңарту',
+  actExtend: 'Созу',
   actPromote: 'Жылжыту',
 
   // Billing / packages
