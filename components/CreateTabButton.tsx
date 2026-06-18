@@ -53,5 +53,8 @@ const styles = StyleSheet.create({
     ...Shadow.md,
   },
   normalWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  normalLabel: { fontFamily: Fonts.medium, fontSize: 11 },
+  // lineHeight must be set explicitly: <Text> defaults to the body variant
+  // (lineHeight 24), which would inflate this 11px label's box and push the
+  // icon+label block upward, misaligning it with the sibling tabs.
+  normalLabel: { fontFamily: Fonts.medium, fontSize: 11, lineHeight: 14 },
 });

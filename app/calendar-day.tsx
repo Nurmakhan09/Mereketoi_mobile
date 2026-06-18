@@ -189,7 +189,7 @@ export default function CalendarDayScreen() {
         <View style={styles.section}>
           <Text variant="h3" color={Colors.text} style={styles.sectionH}>{t.daysBookings}</Text>
           {day.bookings.map((b) => (
-            <BookingCard key={b.id} b={b} t={t} busy={busy} onCall={onCall} act={act} />
+            <BookingCard key={b.id} b={b} t={t} busy={busy} isPast={isPast} onCall={onCall} act={act} />
           ))}
         </View>
       ) : null}
@@ -249,11 +249,12 @@ export default function CalendarDayScreen() {
 
 /** Provider's view of one booking on this day: accept/decline, deal, change-reconfirm, request-change. */
 function BookingCard({
-  b, t, busy, onCall, act,
+  b, t, busy, isPast, onCall, act,
 }: {
   b: ProviderDayBooking;
   t: ReturnType<typeof useI18n>['t'];
   busy: boolean;
+  isPast: boolean;
   onCall: (p: string) => void;
   act: (fn: () => Promise<unknown>) => Promise<void>;
 }) {
@@ -277,7 +278,7 @@ function BookingCard({
       ) : null}
       {b.note ? <Text variant="xsmall" color={Colors.textMuted} style={styles.gap}>{b.note}</Text> : null}
 
-      {b.status === 'pending' ? (
+      {b.status === 'pending' && !isPast ? (
         <View style={styles.row2}>
           <Button title={t.bookingAcceptAct} small onPress={() => act(() => acceptBooking(b.id))} disabled={busy} style={styles.flex1} />
           <Button title={t.bookingDeclineAct} small variant="outline" onPress={() => act(() => declineBooking(b.id))} disabled={busy} style={styles.flex1} />
@@ -293,17 +294,19 @@ function BookingCard({
         </View>
       ) : null}
 
-      {/* Client-requested change → provider confirms/rejects */}
+      {/* Client-requested change → provider confirms/rejects (read-only when past) */}
       {b.status === 'accepted' && b.pending && b.pending.requested_by === 'client' ? (
         <View style={styles.changeBox}>
           <Text variant="small" color={Colors.text}>{t.calChangeRequested}</Text>
           <Text variant="xsmall" color={Colors.textMuted}>
             {b.pending.date}{b.pending.price != null ? ` · ${b.pending.price} ₸` : ''}{b.pending.time ? ` · ${b.pending.time}` : ''}{b.pending.address ? ` · ${b.pending.address}` : ''}
           </Text>
-          <View style={styles.row2}>
-            <Button title={t.changeConfirm} small onPress={() => act(() => confirmChange(b.id))} disabled={busy} style={styles.flex1} />
-            <Button title={t.changeReject} small variant="outline" onPress={() => act(() => rejectChange(b.id))} disabled={busy} style={styles.flex1} />
-          </View>
+          {!isPast ? (
+            <View style={styles.row2}>
+              <Button title={t.changeConfirm} small onPress={() => act(() => confirmChange(b.id))} disabled={busy} style={styles.flex1} />
+              <Button title={t.changeReject} small variant="outline" onPress={() => act(() => rejectChange(b.id))} disabled={busy} style={styles.flex1} />
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -312,8 +315,8 @@ function BookingCard({
         <Text variant="xsmall" color={Colors.textMuted} style={styles.gap}>{t.changeAwaiting}</Text>
       ) : null}
 
-      {/* No staged change → provider can REQUEST one (client confirms) */}
-      {b.status === 'accepted' && !b.pending ? (
+      {/* No staged change → provider can REQUEST one (client confirms). Hidden on past days. */}
+      {b.status === 'accepted' && !b.pending && !isPast ? (
         <>
           <Button title={t.bookingEdit} small variant="ghost" onPress={() => setEditing((e) => !e)} disabled={busy} />
           {editing ? (
