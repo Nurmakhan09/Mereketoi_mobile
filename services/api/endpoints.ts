@@ -62,6 +62,13 @@ export const Endpoints = {
   pushRegister: '/push/register',
   pushUnregister: '/push/unregister',
 
+  // Billing — packages public; payments Bearer (note the /app/* prefix on authed)
+  billingPackages: '/billing/packages',
+  billingMe: '/app/billing/me',
+  paymentCreate: '/app/payments/halyk/create',
+  paymentStatus: (invoiceId: string) => `/app/payments/${invoiceId}/status`,
+  payments: '/app/payments',
+
   // Reminders (Bearer)
   reminders: '/reminders',
   reminder: (id: number) => `/reminders/${id}`,

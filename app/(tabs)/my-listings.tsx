@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,8 @@ import {
   publishListing,
 } from '@/services/api/listings';
 import { imageUrl } from '@/utils/imageUrl';
+import { PackagesSheet } from '@/features/billing/PackagesSheet';
+import { WEB_URL } from '@/constants/config';
 import { OwnerListing } from '@/types';
 
 /**
@@ -39,6 +41,7 @@ export default function MyListingScreen() {
   const [listing, setListing] = useState<OwnerListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [pkgOpen, setPkgOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,34 +89,59 @@ export default function MyListingScreen() {
     );
   }
 
-  return (
-    <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.base }]}>
-      <View style={styles.titleRow}><Logo size="sm" /></View>
-      <Text variant="h1" color={Colors.text} style={styles.heading}>{t.myListing}</Text>
+  // Promotion / paid packages — Android only (App Store IAP policy). iOS routes
+  // the user to the website where Halyk checkout lives.
+  const onPromote = () => {
+    if (Platform.OS === 'android') {
+      setPkgOpen(true);
+    } else {
+      Alert.alert(t.packagesTitle, t.packagesIosWeb, [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.openWeb, onPress: () => Linking.openURL(WEB_URL).catch(() => {}) },
+      ]);
+    }
+  };
 
-      {error && !listing ? (
-        <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />
-      ) : !listing ? (
-        <EmptyState
-          icon="cube-outline"
-          title={t.emptyMyListings}
-          actionLabel={t.newListing}
-          onAction={() => router.push('/create')}
+  return (
+    <>
+      <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.base }]}>
+        <View style={styles.titleRow}><Logo size="sm" /></View>
+        <Text variant="h1" color={Colors.text} style={styles.heading}>{t.myListing}</Text>
+
+        {error && !listing ? (
+          <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />
+        ) : !listing ? (
+          <EmptyState
+            icon="cube-outline"
+            title={t.emptyMyListings}
+            actionLabel={t.newListing}
+            onAction={() => router.push('/create')}
+          />
+        ) : (
+          <Row
+            item={listing}
+            t={t}
+            onEdit={() => router.push(`/my/${listing.uuid}/edit`)}
+            onCalendar={() => router.push('/calendar')}
+            onView={() => listing.public_code && router.push(`/listing/${listing.uuid}`)}
+            onPublish={() => void act(() => publishListing(listing.uuid))}
+            onArchive={() => confirmThen(t.confirmArchive, () => archiveListing(listing.uuid))}
+            onUnarchive={() => void act(() => unarchiveListing(listing.uuid))}
+            onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(listing.uuid))}
+            onPromote={onPromote}
+          />
+        )}
+      </ScrollView>
+
+      {listing ? (
+        <PackagesSheet
+          visible={pkgOpen}
+          onClose={() => setPkgOpen(false)}
+          listingUuid={listing.uuid}
+          onPaid={() => void load()}
         />
-      ) : (
-        <Row
-          item={listing}
-          t={t}
-          onEdit={() => router.push(`/my/${listing.uuid}/edit`)}
-          onCalendar={() => router.push('/calendar')}
-          onView={() => listing.public_code && router.push(`/listing/${listing.uuid}`)}
-          onPublish={() => void act(() => publishListing(listing.uuid))}
-          onArchive={() => confirmThen(t.confirmArchive, () => archiveListing(listing.uuid))}
-          onUnarchive={() => void act(() => unarchiveListing(listing.uuid))}
-          onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(listing.uuid))}
-        />
-      )}
-    </ScrollView>
+      ) : null}
+    </>
   );
 }
 
@@ -127,9 +155,10 @@ interface RowProps {
   onArchive: () => void;
   onUnarchive: () => void;
   onDelete: () => void;
+  onPromote: () => void;
 }
 
-function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnarchive, onDelete }: RowProps) {
+function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnarchive, onDelete, onPromote }: RowProps) {
   const img = imageUrl(item.main_image);
   const s = item.status;
   return (
@@ -150,6 +179,7 @@ function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnar
 
       <View style={styles.rowActions}>
         {s === 'active' && item.public_code ? <ActBtn icon="eye-outline" label={t.actView} color={Colors.primary} onPress={onView} /> : null}
+        {s === 'active' ? <ActBtn icon="rocket-outline" label={t.actPromote} color={Colors.secondary} onPress={onPromote} /> : null}
         <ActBtn icon="create-outline" label={t.actEdit} color={Colors.primary} onPress={onEdit} />
         {s === 'draft' ? <ActBtn icon="rocket-outline" label={t.actPublish} color={Colors.success} onPress={onPublish} /> : null}
         {s === 'expired' ? <ActBtn icon="refresh-outline" label={t.actRenew} color={Colors.success} onPress={onPublish} /> : null}
