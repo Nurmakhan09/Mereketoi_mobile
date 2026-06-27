@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
+import { View, StyleSheet, FlatList, TextInput, ActivityIndicator, ScrollView, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListingCard } from '@/components/ListingCard';
 import { Logo } from '@/components/Logo';
-import { SelectField, SelectOption } from '@/components/ui/SelectField';
+import { Pill } from '@/components/ui/Pill';
+import { Sheet } from '@/components/ui/Sheet';
+import { Button } from '@/components/ui/Button';
+import { Text } from '@/components/ui/Text';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
@@ -14,9 +17,35 @@ import { useTaxonomy } from '@/features/listings/useTaxonomy';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
-import { ListingCard as ListingCardType, SortOption } from '@/types';
+import { ListingCard as ListingCardType, SortOption, PriceType } from '@/types';
 
 const SORTS: SortOption[] = ['newest', 'oldest', 'price_asc', 'price_desc'];
+const PRICE_TYPES: PriceType[] = ['fixed', 'negotiable', 'not_specified'];
+const MONTHS_ABBR_KK = ['қаң', 'ақп', 'нау', 'сәу', 'мам', 'мау', 'шіл', 'там', 'қыр', 'қаз', 'қар', 'жел'];
+const MONTHS_ABBR_RU = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+/** Build the next `n` selectable dates (YYYY-MM-DD) starting today. */
+function upcomingDates(n: number): string[] {
+  const out: string[] = [];
+  const base = new Date();
+  for (let i = 0; i < n; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  }
+  return out;
+}
+
+/** A labeled horizontal pill row (module-scope → stable identity, keeps scroll position). */
+function PillRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View style={styles.fRow}>
+      <Text variant="small" color={Colors.textMuted} style={styles.fLabel}>{label}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fScroll}>
+        {children}
+      </ScrollView>
+    </View>
+  );
+}
 
 /** Catalog / Search — dropdown filters (q, city, category, sort) + paginated infinite scroll. */
 export default function SearchScreen() {
@@ -32,6 +61,9 @@ export default function SearchScreen() {
   const [category, setCategory] = useState<string | undefined>(params.category);
   const [city, setCity] = useState<string | undefined>(params.city);
   const [sort, setSort] = useState<SortOption>('newest');
+  const [priceType, setPriceType] = useState<PriceType | undefined>(undefined);
+  const [date, setDate] = useState<string | undefined>(undefined);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [items, setItems] = useState<ListingCardType[]>([]);
   const [page, setPage] = useState(1);
@@ -56,6 +88,31 @@ export default function SearchScreen() {
     price_asc: t.sortPriceAsc,
     price_desc: t.sortPriceDesc,
   };
+  const priceLabel: Record<PriceType, string> = {
+    fixed: t.priceFixed,
+    negotiable: t.priceNegotiable,
+    not_specified: t.priceNotSpecified,
+  };
+
+  // Pretty label for a YYYY-MM-DD date pill ("5 шіл").
+  const months = locale === 'ru' ? MONTHS_ABBR_RU : MONTHS_ABBR_KK;
+  const dateLabel = (d: string) => {
+    const [, m, day] = d.split('-');
+    return `${parseInt(day, 10)} ${months[parseInt(m, 10) - 1]}`;
+  };
+  const dates = useMemo(() => upcomingDates(45), []);
+
+  // Count of applied filters (excludes the free-text query + default sort) → button badge.
+  const activeCount =
+    (category ? 1 : 0) + (city ? 1 : 0) + (priceType ? 1 : 0) + (date ? 1 : 0) + (sort !== 'newest' ? 1 : 0);
+
+  const clearAll = () => {
+    setCategory(undefined);
+    setCity(undefined);
+    setPriceType(undefined);
+    setDate(undefined);
+    setSort('newest');
+  };
 
   const load = useCallback(
     async (pageToLoad: number) => {
@@ -67,7 +124,7 @@ export default function SearchScreen() {
         setLoadingMore(true);
       }
       try {
-        const res = await fetchListings({ q, category, city, sort, page: pageToLoad });
+        const res = await fetchListings({ q, category, city, sort, price_type: priceType, date, page: pageToLoad });
         if (myReq !== reqId.current) return; // stale
         setPages(res.meta.pages);
         setPage(res.meta.page);
@@ -81,7 +138,7 @@ export default function SearchScreen() {
         }
       }
     },
-    [q, category, city, sort],
+    [q, category, city, sort, priceType, date],
   );
 
   // Reload page 1 whenever any filter changes (query debounced).
@@ -89,17 +146,6 @@ export default function SearchScreen() {
     const handle = setTimeout(() => void load(1), q ? 350 : 0);
     return () => clearTimeout(handle);
   }, [load, q]);
-
-  // Dropdown options ("all" entry first).
-  const categoryOptions: SelectOption[] = useMemo(
-    () => [{ value: '', label: t.allCategories }, ...categories.map((c) => ({ value: c.slug, label: localized(c, 'name', locale) }))],
-    [categories, locale, t.allCategories],
-  );
-  const cityOptions: SelectOption[] = useMemo(
-    () => [{ value: '', label: t.allCities }, ...cities.map((c) => ({ value: c.slug, label: localized(c, 'name', locale) }))],
-    [cities, locale, t.allCities],
-  );
-  const sortOptions: SelectOption[] = SORTS.map((s) => ({ value: s, label: sortLabel[s] }));
 
   const onFavorite = (uuid: string) =>
     requireAuth(() => {
@@ -117,44 +163,84 @@ export default function SearchScreen() {
       <View style={styles.logoRow}>
         <Logo size="md" />
       </View>
-      <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={20} color={Colors.textMuted} />
-        <TextInput
-          value={q}
-          onChangeText={setQ}
-          placeholder={t.searchPlaceholder}
-          placeholderTextColor={Colors.textFaint}
-          style={styles.searchInput}
-          returnKeyType="search"
-        />
-        {q ? (
-          <Ionicons name="close-circle" size={18} color={Colors.textFaint} onPress={() => setQ('')} />
-        ) : null}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={20} color={Colors.textMuted} />
+          <TextInput
+            value={q}
+            onChangeText={setQ}
+            placeholder={t.searchPlaceholder}
+            placeholderTextColor={Colors.textFaint}
+            style={styles.searchInput}
+            returnKeyType="search"
+          />
+          {q ? (
+            <Ionicons name="close-circle" size={18} color={Colors.textFaint} onPress={() => setQ('')} />
+          ) : null}
+        </View>
+        {/* Filter button — opens the filter sheet (date · price · category · city · sort). */}
+        <Pressable style={[styles.filterBtn, activeCount ? styles.filterBtnActive : null]} onPress={() => setFilterOpen(true)} hitSlop={6}>
+          <Ionicons name="options-outline" size={22} color={activeCount ? Colors.white : Colors.primary} />
+          {activeCount ? (
+            <View style={styles.filterBadge}><Text variant="xsmall" color={Colors.white} style={styles.filterBadgeTxt}>{activeCount}</Text></View>
+          ) : null}
+        </Pressable>
       </View>
-
-      {/* Dropdown filters */}
-      <SelectField
-        label={t.category}
-        placeholder={t.allCategories}
-        value={category ?? ''}
-        options={categoryOptions}
-        onChange={(v) => setCategory(v ? String(v) : undefined)}
-      />
-      <SelectField
-        label={t.city}
-        placeholder={t.allCities}
-        value={city ?? ''}
-        options={cityOptions}
-        onChange={(v) => setCity(v ? String(v) : undefined)}
-      />
-      <SelectField
-        label={t.sort}
-        placeholder={t.sortNewest}
-        value={sort}
-        options={sortOptions}
-        onChange={(v) => setSort(v as SortOption)}
-      />
     </View>
+  );
+
+  const filterSheet = (
+    <Sheet visible={filterOpen} onClose={() => setFilterOpen(false)} title={t.filters}>
+      <ScrollView style={styles.fSheet} keyboardShouldPersistTaps="handled">
+        {/* Date (availability) */}
+        <View style={styles.fRow}>
+          <Text variant="small" color={Colors.textMuted} style={styles.fLabel}>{t.filterDate}</Text>
+          <Text variant="xsmall" color={Colors.textFaint} style={styles.fHint}>{t.filterDateHint}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fScroll}>
+            <Pill label={t.anyDate} selected={!date} onPress={() => setDate(undefined)} />
+            {dates.map((d) => (
+              <Pill key={d} label={dateLabel(d)} selected={date === d} onPress={() => setDate(d)} />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Category */}
+        <PillRow label={t.category}>
+          <Pill label={t.allCategories} selected={!category} onPress={() => setCategory(undefined)} />
+          {categories.map((c) => (
+            <Pill key={c.slug} label={localized(c, 'name', locale)} selected={category === c.slug} onPress={() => setCategory(c.slug)} />
+          ))}
+        </PillRow>
+
+        {/* City */}
+        <PillRow label={t.city}>
+          <Pill label={t.allCities} selected={!city} onPress={() => setCity(undefined)} />
+          {cities.map((c) => (
+            <Pill key={c.slug} label={localized(c, 'name', locale)} selected={city === c.slug} onPress={() => setCity(c.slug)} />
+          ))}
+        </PillRow>
+
+        {/* Price type */}
+        <PillRow label={t.priceType}>
+          <Pill label={t.allPriceTypes} selected={!priceType} onPress={() => setPriceType(undefined)} />
+          {PRICE_TYPES.map((p) => (
+            <Pill key={p} label={priceLabel[p]} selected={priceType === p} onPress={() => setPriceType(p)} />
+          ))}
+        </PillRow>
+
+        {/* Sort */}
+        <PillRow label={t.sort}>
+          {SORTS.map((s) => (
+            <Pill key={s} label={sortLabel[s]} selected={sort === s} onPress={() => setSort(s)} />
+          ))}
+        </PillRow>
+
+        <View style={styles.fActions}>
+          {activeCount ? <Button title={t.clearFilter} variant="outline" onPress={clearAll} style={styles.flex1} /> : null}
+          <Button title={t.applyFilters} onPress={() => setFilterOpen(false)} style={styles.flex1} />
+        </View>
+      </ScrollView>
+    </Sheet>
   );
 
   return (
@@ -198,6 +284,7 @@ export default function SearchScreen() {
           loadingMore ? <ActivityIndicator color={Colors.primary} style={styles.footer} /> : null
         }
       />
+      {filterSheet}
     </View>
   );
 }
@@ -213,7 +300,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   logoRow: { alignItems: 'center', marginBottom: Spacing.base },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   searchBox: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surfaceMuted,
@@ -222,8 +311,25 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     paddingHorizontal: Spacing.base,
     height: 46,
-    marginBottom: Spacing.base,
   },
   searchInput: { flex: 1, marginLeft: Spacing.sm, color: Colors.textBody, fontSize: 16 },
+  filterBtn: {
+    width: 46, height: 46, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.primary,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surface,
+  },
+  filterBtnActive: { backgroundColor: Colors.primary },
+  filterBadge: {
+    position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, paddingHorizontal: 4,
+    borderRadius: 9, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+  },
+  filterBadgeTxt: { fontWeight: '800', fontSize: 11, lineHeight: 14 },
+  // Filter sheet
+  fSheet: { maxHeight: 460 },
+  fRow: { marginBottom: Spacing.base },
+  fLabel: { fontWeight: '700', marginBottom: Spacing.xs },
+  fHint: { marginBottom: Spacing.sm },
+  fScroll: { gap: Spacing.sm, paddingVertical: 2, paddingRight: Spacing.base },
+  fActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+  flex1: { flex: 1 },
   footer: { paddingVertical: Spacing.base },
 });

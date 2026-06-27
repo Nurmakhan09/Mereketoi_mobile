@@ -33,6 +33,7 @@ export function fetchListings(filters: CatalogFilters = {}) {
   if (filters.city) params.city = filters.city;
   if (filters.category) params.category = filters.category;
   if (filters.price_type) params.price_type = filters.price_type;
+  if (filters.date) params.date = filters.date;
   if (filters.sort) params.sort = filters.sort;
   if (filters.page) params.page = filters.page;
   return apiGet<ListingsPage>(Endpoints.listings, { params });

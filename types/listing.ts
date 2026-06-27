@@ -182,6 +182,10 @@ export interface OwnerCalendar extends PublicCalendar {
   halls: { name: string }[];
   /** date → 'pending' | 'accepted' той markers for the month (owner-only). */
   bookings?: Record<string, string>;
+  /** date → live booking count for that day (number badge on the day). */
+  booking_counts?: Record<string, number>;
+  /** live booking totals in the adjacent months → red number on the prev/next nav. */
+  adjacent_bookings?: { prev: number; next: number };
   /** total pending той requests for this provider (calendar badge). */
   pending_bookings?: number;
 }
@@ -195,6 +199,7 @@ export interface CatalogFilters {
   city?: string; // slug
   category?: string; // slug
   price_type?: PriceType;
+  date?: string; // YYYY-MM-DD — availability filter (only listings free that day)
   sort?: SortOption;
   page?: number;
 }

@@ -65,6 +65,17 @@ const kk = {
   clearFilter: 'Сүзгіні тазалау',
   noResults: 'Нәтиже табылмады',
   noResultsHint: 'Сүзгіні өзгертіп көріңіз.',
+  // Filter sheet
+  filterDate: 'Күні',
+  anyDate: 'Кез келген күн',
+  allPriceTypes: 'Барлық бағалар',
+  applyFilters: 'Қолдану',
+  filterDateHint: 'Таңдалған күні бос хабарландырулар',
+  // Help center
+  helpGuideTitle: 'Қадамдық нұсқаулық',
+  helpFaqTitle: 'Жиі қойылатын сұрақтар',
+  helpSearchPlaceholder: 'Сұрақтан іздеу',
+  helpNoResults: 'Ештеңе табылмады',
 
   // Listing detail
   showPhone: 'Телефонды көрсету',

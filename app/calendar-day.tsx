@@ -69,6 +69,7 @@ export default function CalendarDayScreen() {
   const [invPrice, setInvPrice] = useState('');
   const [invTime, setInvTime] = useState('');
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(true); // create form visible; collapses after a link is made
 
   const isPast = date < todayIso();
 
@@ -79,6 +80,7 @@ export default function CalendarDayScreen() {
     setInviteUrl(null);
     setInvPrice('');
     setInvTime('');
+    setFormOpen(true);
     try {
       const cal = await fetchOwnerCalendar(uuid, date.slice(0, 7), hall);
       const saved = cal.days.find((d) => d.date === date);
@@ -130,6 +132,9 @@ export default function CalendarDayScreen() {
         time: invTime.trim() || null,
       });
       setInviteUrl(res.invite_url);
+      setInvPrice('');
+      setInvTime('');
+      setFormOpen(false); // collapse the form; the fresh link stays shown, "+" makes another
       // Refresh ONLY the day's invite list — calling load() here would reset
       // inviteUrl back to null and the freshly created link would never show.
       try { setDay(await fetchProviderDay(date)); } catch { /* keep current */ }
@@ -199,24 +204,37 @@ export default function CalendarDayScreen() {
       {/* Той иесін тіркеу (invite) — not for past days */}
       {!isPast ? (
         <Card padded style={styles.section}>
-          <Text variant="h3" color={Colors.text} style={styles.sectionH}>{t.inviteCreate}</Text>
+          <View style={styles.invHead}>
+            <Text variant="h3" color={Colors.text}>{t.inviteCreate}</Text>
+            {/* Corner "+" — open the form to create another link (toggles to collapse). */}
+            <Pressable onPress={() => setFormOpen((o) => !o)} hitSlop={8} style={styles.invAdd}>
+              <Ionicons name={formOpen ? 'remove' : 'add'} size={22} color={Colors.primary} />
+            </Pressable>
+          </View>
+
+          {/* Freshly created link — stays visible (sticky) so it can be shared right away. */}
           {inviteUrl ? (
-            <>
+            <View style={styles.invCreated}>
               <Text variant="small" color={Colors.success} style={styles.gap}>{t.inviteCreatedMsg}</Text>
+              <Text variant="xsmall" color={Colors.textMuted} numberOfLines={1} style={styles.gap}>{inviteUrl}</Text>
               <View style={styles.row2}>
                 <Button title={t.inviteCopy} small variant="outline" onPress={() => shareInvite(inviteUrl)} style={styles.flex1} />
                 <Button title={t.inviteShareWa} small onPress={() => waInvite(inviteUrl)} style={styles.flex1} />
               </View>
-            </>
-          ) : (
-            <>
+            </View>
+          ) : null}
+
+          {/* Create form — toggled by the corner "+". */}
+          {formOpen ? (
+            <View style={styles.invForm}>
               <View style={styles.row2}>
                 <TextInput value={invPrice} onChangeText={(v) => setInvPrice(v.replace(/[^0-9]/g, ''))} placeholder={t.bookingPriceLabel} placeholderTextColor={Colors.textFaint} keyboardType="number-pad" style={[styles.input, styles.flex1]} />
                 <TextInput value={invTime} onChangeText={(v) => setInvTime(maskTime(v))} keyboardType="number-pad" placeholder="18:00" placeholderTextColor={Colors.textFaint} maxLength={5} style={[styles.input, styles.flex1]} />
               </View>
               <Button title={t.inviteCreateSubmit} small loading={busy} onPress={onCreateInvite} />
-            </>
-          )}
+            </View>
+          ) : null}
+
           {day?.invites.map((inv) => (
             <View key={inv.id} style={styles.invRow}>
               <Text variant="xsmall" color={Colors.textMuted}>🔗 {inv.price != null ? `${inv.price} ₸` : ''} {inv.time}</Text>
@@ -395,5 +413,15 @@ const styles = StyleSheet.create({
   dealRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3, borderBottomWidth: 1, borderBottomColor: Colors.border },
   changeBox: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border, gap: 4 },
   invRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.sm },
+  invHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm },
+  invAdd: {
+    width: 34, height: 34, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  invCreated: {
+    backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#86EFAC', borderRadius: Radius.sm,
+    padding: Spacing.md, marginBottom: Spacing.sm,
+  },
+  invForm: { marginTop: Spacing.xs },
   fieldLbl: { marginBottom: 2 },
 });

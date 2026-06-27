@@ -11,4 +11,6 @@ export interface CmsPage {
   title_ru: string;
   content_kk: string;
   content_ru: string;
+  /** 'help' → content is structured JSON ({guide,faq}); otherwise HTML/prose. */
+  content_type?: string;
 }

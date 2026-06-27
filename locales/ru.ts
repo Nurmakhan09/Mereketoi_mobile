@@ -61,6 +61,17 @@ const ru: Strings = {
   clearFilter: 'Сбросить фильтр',
   noResults: 'Ничего не найдено',
   noResultsHint: 'Попробуйте изменить фильтр.',
+  // Filter sheet
+  filterDate: 'Дата',
+  anyDate: 'Любая дата',
+  allPriceTypes: 'Все цены',
+  applyFilters: 'Применить',
+  filterDateHint: 'Свободные на выбранную дату',
+  // Help center
+  helpGuideTitle: 'Пошаговое руководство',
+  helpFaqTitle: 'Частые вопросы',
+  helpSearchPlaceholder: 'Поиск по вопросам',
+  helpNoResults: 'Ничего не найдено',
 
   showPhone: 'Показать телефон',
   callPhone: 'Позвонить',

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { SimpleHtml } from '@/components/SimpleHtml';
+import { HelpContent } from '@/components/HelpContent';
 import { Loading, ErrorState } from '@/components/ui/StateViews';
 import { Colors, Spacing } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
@@ -43,13 +44,15 @@ export default function CmsPageScreen() {
 
   const content = localized(page, 'content', locale);
   const title = localized(page, 'title', locale);
+  // The help page stores structured JSON (guide + FAQ), not HTML — render it natively.
+  const isHelp = page.content_type === 'help' || page.slug === 'help';
 
   return (
     <Screen scroll padded>
       <Text variant="h1" color={Colors.text} style={styles.title}>
         {title}
       </Text>
-      <SimpleHtml html={content} />
+      {isHelp ? <HelpContent json={content} /> : <SimpleHtml html={content} />}
     </Screen>
   );
 }

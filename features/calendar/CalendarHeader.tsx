@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 import { Sheet } from '@/components/ui/Sheet';
 import { Pill } from '@/components/ui/Pill';
@@ -14,12 +14,14 @@ interface Props {
   month: string; // YYYY-MM
   prevMonth: string | null;
   nextMonth: string | null;
+  prevCount?: number; // live bookings in the previous month → red flag on the ‹ arrow
+  nextCount?: number; // live bookings in the next month → red flag on the › arrow
   onChange: (month: string) => void;
 }
 
 /** Month navigator with a tappable label that opens a year+month picker
  * (jump straight to any month within [this month, +36 months]). */
-export function CalendarHeader({ month, prevMonth, nextMonth, onChange }: Props) {
+export function CalendarHeader({ month, prevMonth, nextMonth, prevCount = 0, nextCount = 0, onChange }: Props) {
   const { locale } = useI18n();
   const months = locale === 'ru' ? MONTHS_RU : MONTHS_KK;
   const [open, setOpen] = useState(false);
@@ -43,6 +45,9 @@ export function CalendarHeader({ month, prevMonth, nextMonth, onChange }: Props)
     <View style={styles.row}>
       <Pressable disabled={!prevMonth} onPress={() => prevMonth && onChange(prevMonth)} style={styles.navBtn} hitSlop={6}>
         <Ionicons name="chevron-back" size={22} color={prevMonth ? Colors.primary : Colors.textFaint} />
+        {prevCount > 0 ? (
+          <View style={styles.badge}><Text variant="xsmall" color={Colors.white} style={styles.badgeTxt}>{prevCount}</Text></View>
+        ) : null}
       </Pressable>
 
       <Pressable onPress={() => setOpen(true)} style={styles.label} hitSlop={6}>
@@ -54,6 +59,9 @@ export function CalendarHeader({ month, prevMonth, nextMonth, onChange }: Props)
 
       <Pressable disabled={!nextMonth} onPress={() => nextMonth && onChange(nextMonth)} style={styles.navBtn} hitSlop={6}>
         <Ionicons name="chevron-forward" size={22} color={nextMonth ? Colors.primary : Colors.textFaint} />
+        {nextCount > 0 ? (
+          <View style={styles.badge}><Text variant="xsmall" color={Colors.white} style={styles.badgeTxt}>{nextCount}</Text></View>
+        ) : null}
       </Pressable>
 
       <Sheet visible={open} onClose={() => setOpen(false)} title={label}>
@@ -81,6 +89,11 @@ export function CalendarHeader({ month, prevMonth, nextMonth, onChange }: Props)
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.base },
   navBtn: { padding: Spacing.sm },
+  badge: {
+    position: 'absolute', top: 0, right: 0, minWidth: 16, height: 16, paddingHorizontal: 3,
+    borderRadius: 8, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+  },
+  badgeTxt: { fontWeight: '800', fontSize: 10, lineHeight: 13 },
   label: { flexDirection: 'row', alignItems: 'center' },
   labelIco: { marginLeft: 4 },
   picker: { maxHeight: 360 },

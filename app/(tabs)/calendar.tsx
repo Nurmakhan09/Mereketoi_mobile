@@ -34,6 +34,7 @@ interface DayRow {
   status: DayStatus;
   note: string;
   marker: string; // '' | 'pending' | 'accepted' той booking on this day
+  count: number; // number of той bookings on this day (badge)
   isToday: boolean;
   isPast: boolean;
 }
@@ -41,7 +42,12 @@ interface DayRow {
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 /** Build all rows for a month (every day 1..N), looking up saved status/notes + той markers. */
-function buildRows(month: string, days: OwnerCalendar['days'], bookings: Record<string, string>): DayRow[] {
+function buildRows(
+  month: string,
+  days: OwnerCalendar['days'],
+  bookings: Record<string, string>,
+  counts: Record<string, number>,
+): DayRow[] {
   const byDate = new Map(days.map((d) => [d.date, d]));
   const [y, m] = month.split('-').map(Number);
   const count = new Date(y, m, 0).getDate(); // days in month
@@ -58,6 +64,7 @@ function buildRows(month: string, days: OwnerCalendar['days'], bookings: Record<
       status: saved?.status ?? 'free',
       note: (saved?.public_note || saved?.private_note || '').trim(),
       marker: bookings[date] ?? '',
+      count: counts[date] ?? 0,
       isToday: date === today,
       isPast: date < today,
     });
@@ -134,7 +141,14 @@ export default function CalendarTab() {
         </View>
       ) : null}
       {data ? (
-        <CalendarHeader month={data.month} prevMonth={data.prev_month} nextMonth={data.next_month} onChange={setMonth} />
+        <CalendarHeader
+          month={data.month}
+          prevMonth={data.prev_month}
+          nextMonth={data.next_month}
+          prevCount={data.adjacent_bookings?.prev ?? 0}
+          nextCount={data.adjacent_bookings?.next ?? 0}
+          onChange={setMonth}
+        />
       ) : null}
     </View>
   );
@@ -163,7 +177,7 @@ export default function CalendarTab() {
   if (loading && !data) return <Loading />;
   if (error || !data) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
 
-  const rows = buildRows(data.month, data.days, data.bookings ?? {});
+  const rows = buildRows(data.month, data.days, data.bookings ?? {}, data.booking_counts ?? {});
   const months = locale === 'ru' ? MONTHS_RU : MONTHS_KK;
   const wd = locale === 'ru' ? WD_RU : WD_KK;
 
@@ -184,6 +198,11 @@ export default function CalendarTab() {
             <View style={styles.dateCol}>
               <Text variant="h2" color={item.isPast ? Colors.textFaint : Colors.text}>{item.day}</Text>
               <Text variant="xsmall" color={Colors.textMuted}>{wd[item.isoWd]}</Text>
+              {item.count > 0 ? (
+                <View style={styles.countBadge}>
+                  <Text variant="xsmall" color={Colors.white} style={styles.countTxt}>{item.count}</Text>
+                </View>
+              ) : null}
             </View>
             <View style={styles.mid}>
               <View style={styles.badgeRow}>
@@ -227,6 +246,11 @@ const styles = StyleSheet.create({
   rowToday: { borderColor: Colors.primary },
   rowPast: { backgroundColor: Colors.surfaceMuted, borderColor: Colors.surfaceMuted },
   dateCol: { width: 44, alignItems: 'center' },
+  countBadge: {
+    position: 'absolute', top: -6, right: -2, minWidth: 18, height: 18, paddingHorizontal: 4,
+    borderRadius: 9, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+  },
+  countTxt: { fontWeight: '800', fontSize: 11, lineHeight: 14 },
   mid: { flex: 1, gap: 4 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 2, borderRadius: Radius.sm },
