@@ -10,6 +10,7 @@ import { useI18n } from '@/locales';
 import { Locale } from '@/stores/localeStore';
 import { fetchBookingHistory } from '@/services/api/weddingPlan';
 import { BookingHistoryEntry } from '@/types';
+import { formatNumber } from '@/utils/format';
 
 // Action → human label (mirrors App.histAction_*). Keyed by the action minus "booking.".
 const ACTIONS: Record<Locale, Record<string, string>> = {
@@ -51,7 +52,7 @@ function toneOf(a: string): Tone {
 
 function fmtVal(key: string, v: unknown): string {
   if (v === null || v === undefined || v === '' || v === 0 || v === '0') return '—';
-  if (key === 'price' || key === 'paid') return `${Number(v).toLocaleString('ru-RU').replace(/,/g, ' ')} ₸`;
+  if (key === 'price' || key === 'paid') return `${formatNumber(Number(v))} ₸`;
   if (key === 'hall_id') return Number(v) > 0 ? `Зал ${Number(v)}` : '—';
   return String(v);
 }

@@ -13,6 +13,18 @@ export function formatPhone(raw?: string | null): string {
   return `+7 ${p.slice(0, 3)} ${p.slice(3, 6)} ${p.slice(6, 8)} ${p.slice(8, 10)}`;
 }
 
+/**
+ * Group an integer amount with spaces every 3 digits: 5000000 → "5 000 000".
+ * Done manually (NOT toLocaleString) because React Native's Hermes engine
+ * ignores the locale argument and returns the number unseparated.
+ */
+export function formatNumber(amount: number | null | undefined): string {
+  if (amount == null || !isFinite(amount)) return '0';
+  const sign = amount < 0 ? '-' : '';
+  const abs = String(Math.abs(Math.round(amount)));
+  return sign + abs.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 /** Format a price amount with thousands separators + ₸. */
 export function formatPrice(
   amount: number | null | undefined,
@@ -21,7 +33,7 @@ export function formatPrice(
 ): string {
   if (priceType === 'negotiable') return labels.negotiable;
   if (priceType === 'not_specified' || amount == null) return labels.notSpecified;
-  return `${amount.toLocaleString('ru-RU')} ${labels.tenge}`;
+  return `${formatNumber(amount)} ${labels.tenge}`;
 }
 
 /**

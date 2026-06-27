@@ -73,9 +73,16 @@ export default function ProfileScreen() {
       {isAuthed ? (
         <Card style={styles.menu} padded={false}>
           <MenuItem icon="albums-outline" label={t.menuMyListings} onPress={() => router.push('/my-listings')} />
-          <MenuItem icon="heart-outline" label={t.tabFavorites} onPress={() => router.push('/favorites')} />
           <MenuItem icon="sparkles-outline" label={t.menuToi} onPress={() => router.push('/toi')} />
           <MenuItem icon="calendar-outline" label={t.calendarTitle} onPress={() => router.push('/calendar')} />
+          <MenuItem icon="time-outline" label={t.historyTitle} onPress={() => router.push('/toi/history')} last />
+        </Card>
+      ) : null}
+
+      {/* Account (authed) — Favorites · Notifications · Settings as their own block */}
+      {isAuthed ? (
+        <Card style={styles.menu} padded={false}>
+          <MenuItem icon="heart-outline" label={t.tabFavorites} onPress={() => router.push('/favorites')} />
           <MenuItem icon="notifications-outline" label={t.notificationsTitle} onPress={() => router.push('/notifications')} />
           <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} last />
         </Card>

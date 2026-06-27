@@ -105,8 +105,10 @@ export default function CalendarDayScreen() {
         private_note: privateNote.trim() || undefined,
       });
       router.back();
-    } catch {
-      Alert.alert(t.error, t.errorNetwork);
+    } catch (e: any) {
+      // Show the ACTUAL error (not a blanket "internet error") so a server/validation
+      // failure isn't mislabelled as a network problem when the connection is fine.
+      Alert.alert(t.error, e?.message ?? t.errorNetwork);
     } finally {
       setSaving(false);
     }

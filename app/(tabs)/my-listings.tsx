@@ -205,11 +205,10 @@ function Row({ item, t, onEdit, onCalendar, onView, onPublish, onRenew, onArchiv
 
       <View style={styles.rowActions}>
         {s === 'active' && item.public_code ? <ActBtn icon="eye-outline" label={t.actView} color={Colors.primary} onPress={onView} /> : null}
-        {expiringSoon ? <ActBtn icon="refresh-outline" label={t.actExtend} color={Colors.success} onPress={onRenew} /> : null}
-        {s === 'active' ? <ActBtn icon="rocket-outline" label={t.actPromote} color={Colors.secondary} onPress={onPromote} /> : null}
         <ActBtn icon="create-outline" label={t.actEdit} color={Colors.primary} onPress={onEdit} />
         {s === 'draft' ? <ActBtn icon="rocket-outline" label={t.actPublish} color={Colors.success} onPress={onPublish} /> : null}
-        {s === 'expired' ? <ActBtn icon="refresh-outline" label={t.actRenew} color={Colors.success} onPress={onRenew} /> : null}
+        {/* «Созу» (extend) ТЕК мерзім біткенде — промоут батырмасы + мерзім алды «созу» алынды (иесі: тек уақыты біткенде). */}
+        {s === 'expired' ? <ActBtn icon="refresh-outline" label={t.actExtend} color={Colors.success} onPress={onRenew} /> : null}
         {s !== 'archived' && s !== 'blocked' ? <ActBtn icon="calendar-outline" label={t.actCalendar} color={Colors.secondary} onPress={onCalendar} /> : null}
         {s === 'archived' ? <ActBtn icon="arrow-undo-outline" label={t.actUnarchive} color={Colors.success} onPress={onUnarchive} /> : null}
         {s !== 'archived' && s !== 'blocked' ? <ActBtn icon="archive-outline" label={t.actArchive} color={Colors.warning} onPress={onArchive} /> : null}
