@@ -15,14 +15,12 @@ import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
 import { useTaxonomy } from '@/features/listings/useTaxonomy';
 import { useImagePicker } from '@/features/listings/useImagePicker';
-import { useAuthStore } from '@/stores/authStore';
 import {
   fetchMyListing,
   updateListing,
   uploadListingImage,
   deleteListingImage,
   reorderListingImages,
-  publishListing,
   fetchRegions,
   fetchCities,
   fetchDistricts,
@@ -53,7 +51,6 @@ export default function EditListingScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { t, locale } = useI18n();
   const navigation = useNavigation();
-  const refreshUser = useAuthStore((s) => s.refreshUser);
   const { categories } = useTaxonomy();
   const { pick, picking } = useImagePicker(t.fieldPhotoHint);
 
@@ -211,15 +208,15 @@ export default function EditListingScreen() {
     }
   };
 
+  // Publish now goes through payment: save the (complete) form, then send the user
+  // to the package/payment page (/my/[uuid]/publish). The listing goes active only
+  // after a successful payment (server activates it on Halyk's callback).
   const onPublish = async () => {
     setPublishing(true);
     setErrors({});
     try {
       await updateListing(uuid, collect());
-      await publishListing(uuid);
-      await refreshUser();
-      Alert.alert(t.appName, t.published);
-      router.replace('/my-listings');
+      router.push(`/my/${uuid}/publish`);
     } catch (e) {
       handleApiError(e);
     } finally {

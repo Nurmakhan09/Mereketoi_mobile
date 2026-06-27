@@ -111,6 +111,11 @@ export interface OwnerStats {
   active: number;
   draft: number;
   expired: number;
+  // Hub-card metrics (GET /my/listings → data.stats; web↔app parity). views/favs are
+  // for the user's single listing; pending_bookings is той requests to this provider.
+  views: number;
+  favs: number;
+  pending_bookings: number;
   [key: string]: number;
 }
 

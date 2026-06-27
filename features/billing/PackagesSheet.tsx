@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 
 import { Sheet } from '@/components/ui/Sheet';
 import { Text } from '@/components/ui/Text';
@@ -8,16 +7,9 @@ import { Button } from '@/components/ui/Button';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
-import {
-  fetchPackages,
-  createHalykPayment,
-  fetchPaymentStatus,
-  BillingPackage,
-  PaymentPurchaseType,
-} from '@/services/api/billing';
+import { fetchPackages, BillingPackage, PaymentPurchaseType } from '@/services/api/billing';
+import { runHalykCheckout } from '@/features/billing/checkout';
 import { formatPrice } from '@/utils/format';
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface Props {
   visible: boolean;
@@ -29,11 +21,12 @@ interface Props {
 }
 
 /**
- * Package picker + Halyk checkout (Android). Lists the site's billing packages,
- * creates a server-priced invoice, opens the returned checkout_url in a browser,
- * then polls the invoice until it is paid. Secrets never reach the app — only the
- * checkout_url. The caller renders this ONLY on Android (App Store IAP policy);
- * iOS routes the user to the website instead.
+ * Package picker + Halyk checkout for PROMOTE/BOOST of an active listing. Lists the
+ * site's billing packages, creates a server-priced invoice, opens the returned
+ * checkout_url in a browser, then polls the invoice until it is paid. Secrets never
+ * reach the app — only the checkout_url. The caller (my-listings onPromote) renders
+ * this ONLY on Android; iOS routes the user to the website. (Publishing a draft uses
+ * the separate app/my/[uuid]/publish.tsx page, which runs in-app on both platforms.)
  */
 export function PackagesSheet({ visible, onClose, listingUuid, onPaid }: Props) {
   const { t, locale } = useI18n();
@@ -59,37 +52,16 @@ export function PackagesSheet({ visible, onClose, listingUuid, onPaid }: Props) 
     if (visible) void load();
   }, [visible, load]);
 
-  // Poll the invoice for up to ~40s after the browser closes (the server activates
-  // on Halyk's callback, which can land a moment after the user returns).
-  const pollStatus = useCallback(async (invoiceId: string): Promise<'paid' | 'failed' | 'pending'> => {
-    for (let i = 0; i < 20; i++) {
-      try {
-        const s = await fetchPaymentStatus(invoiceId);
-        if (s.status === 'paid') return 'paid';
-        if (s.status === 'failed' || s.status === 'cancelled') return 'failed';
-      } catch {
-        // transient — keep polling
-      }
-      await sleep(2000);
-    }
-    return 'pending';
-  }, []);
-
   const onSelect = async (pkg: BillingPackage) => {
     setBusyId(pkg.id);
     try {
       const purchaseType = (pkg.package_type || 'package') as PaymentPurchaseType;
-      const res = await createHalykPayment({
-        purchase_type: purchaseType,
-        package_id: pkg.id,
-        listing_uuid: purchaseType === 'listing_publish' ? listingUuid : undefined,
-      });
-
-      // Open the Halyk checkout; resolves when the user returns to the app.
-      await WebBrowser.openBrowserAsync(res.checkout_url);
-
       setChecking(true);
-      const result = await pollStatus(res.invoice_id);
+      const result = await runHalykCheckout({
+        purchaseType,
+        packageId: pkg.id,
+        listingUuid: purchaseType === 'listing_publish' ? listingUuid : undefined,
+      });
       setChecking(false);
 
       if (result === 'paid') {

@@ -66,6 +66,7 @@ export default function RootLayout() {
             <Stack.Screen name="listing/[uuid]/index" options={pushedHeader} />
             <Stack.Screen name="listing/[uuid]/calendar" options={pushedHeader} />
             <Stack.Screen name="my/[uuid]/edit" options={pushedHeader} />
+            <Stack.Screen name="my/[uuid]/publish" options={pushedHeader} />
             <Stack.Screen name="my/[uuid]/calendar" options={pushedHeader} />
             <Stack.Screen name="calendars" options={pushedHeader} />
             <Stack.Screen name="calendar-day" />

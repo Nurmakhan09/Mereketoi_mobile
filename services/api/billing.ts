@@ -10,8 +10,11 @@ import { Endpoints } from './endpoints';
  * browser → Halyk posts to the server callback (activates) → the app polls
  * fetchPaymentStatus until 'paid'.
  *
- * Платформа: payments are wired on Android only (App Store IAP policy) — the caller
- * gates by Platform.OS; iOS points the user to the website.
+ * Платформа: the PUBLISH payment (app/my/[uuid]/publish.tsx) opens the Halyk checkout
+ * in the in-app browser on BOTH iOS and Android (owner decision 2026-06-27). The older
+ * promote/boost sheet (PackagesSheet via my-listings) still gates iOS to the website —
+ * left as-is pending a separate decision. NOTE: a Bearer/mobile session must be able to
+ * reach checkout_url for either to work end-to-end (see AIchat.txt — backend dependency).
  */
 
 export type PackageType =

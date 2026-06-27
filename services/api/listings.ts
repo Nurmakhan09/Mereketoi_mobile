@@ -108,6 +108,12 @@ export function updateListing(uuid: string, data: ListingFormData) {
   return apiPost<{ uuid: string }>(Endpoints.myListing(uuid), data);
 }
 
+/**
+ * FREE/instant publish (POST /my/listings/{uuid}/publish). NOT the paid flow — a
+ * draft is published via the payment page (app/my/[uuid]/publish.tsx → Halyk). This
+ * is kept only for renew/extend of a non-draft listing until the backend exposes a
+ * proper paid renew/extend. Do NOT wire it into the draft publish button.
+ */
 export function publishListing(uuid: string) {
   return apiPost<{ uuid: string }>(Endpoints.myListingPublish(uuid));
 }

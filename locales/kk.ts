@@ -173,6 +173,9 @@ const kk = {
   statActive: 'Белсенді',
   statDraft: 'Жоба',
   statExpired: 'Мерзімі өткен',
+  statViews: 'Көрулер',
+  statFavorites: 'Таңдаулылар',
+  statBookings: 'Брондау',
   tabActive: 'Белсенді',
   tabDraft: 'Жоба',
   tabExpired: 'Мерзімі өткен',
@@ -190,6 +193,8 @@ const kk = {
   actPromote: 'Жылжыту',
 
   // Billing / packages
+  publishPayTitle: 'Хабарландыруды жариялау',
+  publishPayIntro: 'Жариялау үшін пакетті таңдаңыз. Баға мен мерзім таңдалған пакетке байланысты.',
   packagesTitle: 'Пакеттер',
   packagesEmpty: 'Әзірге пакет жоқ.',
   packagesPay: 'Төлеу',

@@ -25,12 +25,12 @@ import {
 import { imageUrl } from '@/utils/imageUrl';
 import { PackagesSheet } from '@/features/billing/PackagesSheet';
 import { WEB_URL } from '@/constants/config';
-import { OwnerListing } from '@/types';
+import { OwnerListing, OwnerStats } from '@/types';
 
 /**
  * "Хабарландыруым" — the ONE listing the user owns (one-listing model). Reached from
- * the middle nav CTA + the profile menu. No plural list / stats / status tabs — a
- * single ad with its actions, or an empty state inviting them to publish one.
+ * the middle nav CTA + the profile menu. A single ad with its actions + a 3-card
+ * stats row (Көрулер · Таңдаулылар · Брондау — web hub parity), or an empty state.
  */
 export default function MyListingScreen() {
   const { t } = useI18n();
@@ -39,6 +39,7 @@ export default function MyListingScreen() {
   const refreshMine = useMyListingStore((s) => s.refresh);
 
   const [listing, setListing] = useState<OwnerListing | null>(null);
+  const [stats, setStats] = useState<OwnerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [pkgOpen, setPkgOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function MyListingScreen() {
     try {
       const res = await fetchMyListings();
       setListing(res.items.find((i) => i.status !== 'deleted') ?? null);
+      setStats(res.stats ?? null);
     } catch {
       setError(true);
     } finally {
@@ -118,18 +120,27 @@ export default function MyListingScreen() {
             onAction={() => router.push('/create')}
           />
         ) : (
-          <Row
+          <>
+            <StatsRow stats={stats} t={t} />
+            <Row
             item={listing}
             t={t}
             onEdit={() => router.push(`/my/${listing.uuid}/edit`)}
             onCalendar={() => router.push('/calendar')}
             onView={() => listing.public_code && router.push(`/listing/${listing.uuid}`)}
-            onPublish={() => void act(() => publishListing(listing.uuid))}
+            // Publishing a DRAFT is the only paid action → payment page. Renew/extend
+            // of a non-draft (expired/expiring) is NOT routed here: the backend's paid
+            // listing_publish path only activates drafts, so charging would lose money
+            // with no effect. They keep the existing (free) publish call until the
+            // backend exposes a proper paid renew/extend flow.
+            onPublish={() => router.push(`/my/${listing.uuid}/publish`)}
+            onRenew={() => void act(() => publishListing(listing.uuid))}
             onArchive={() => confirmThen(t.confirmArchive, () => archiveListing(listing.uuid))}
             onUnarchive={() => void act(() => unarchiveListing(listing.uuid))}
             onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(listing.uuid))}
             onPromote={onPromote}
           />
+          </>
         )}
       </ScrollView>
 
@@ -152,13 +163,14 @@ interface RowProps {
   onCalendar: () => void;
   onView: () => void;
   onPublish: () => void;
+  onRenew: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
   onDelete: () => void;
   onPromote: () => void;
 }
 
-function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnarchive, onDelete, onPromote }: RowProps) {
+function Row({ item, t, onEdit, onCalendar, onView, onPublish, onRenew, onArchive, onUnarchive, onDelete, onPromote }: RowProps) {
   const img = imageUrl(item.main_image);
   const s = item.status;
   // Days until expiry (active listings). Drives the "X күн қалды" hint + the
@@ -194,17 +206,37 @@ function Row({ item, t, onEdit, onCalendar, onView, onPublish, onArchive, onUnar
 
       <View style={styles.rowActions}>
         {s === 'active' && item.public_code ? <ActBtn icon="eye-outline" label={t.actView} color={Colors.primary} onPress={onView} /> : null}
-        {expiringSoon ? <ActBtn icon="refresh-outline" label={t.actExtend} color={Colors.success} onPress={onPublish} /> : null}
+        {expiringSoon ? <ActBtn icon="refresh-outline" label={t.actExtend} color={Colors.success} onPress={onRenew} /> : null}
         {s === 'active' ? <ActBtn icon="rocket-outline" label={t.actPromote} color={Colors.secondary} onPress={onPromote} /> : null}
         <ActBtn icon="create-outline" label={t.actEdit} color={Colors.primary} onPress={onEdit} />
         {s === 'draft' ? <ActBtn icon="rocket-outline" label={t.actPublish} color={Colors.success} onPress={onPublish} /> : null}
-        {s === 'expired' ? <ActBtn icon="refresh-outline" label={t.actRenew} color={Colors.success} onPress={onPublish} /> : null}
+        {s === 'expired' ? <ActBtn icon="refresh-outline" label={t.actRenew} color={Colors.success} onPress={onRenew} /> : null}
         {s !== 'archived' && s !== 'blocked' ? <ActBtn icon="calendar-outline" label={t.actCalendar} color={Colors.secondary} onPress={onCalendar} /> : null}
         {s === 'archived' ? <ActBtn icon="arrow-undo-outline" label={t.actUnarchive} color={Colors.success} onPress={onUnarchive} /> : null}
         {s !== 'archived' && s !== 'blocked' ? <ActBtn icon="archive-outline" label={t.actArchive} color={Colors.warning} onPress={onArchive} /> : null}
         <ActBtn icon="trash-outline" label={t.actDelete} color={Colors.error} onPress={onDelete} />
       </View>
     </Card>
+  );
+}
+
+/** 3-card metrics row (web "Менің хабарландыруым" hub parity): views · favourites · bookings. */
+function StatsRow({ stats, t }: { stats: OwnerStats | null; t: ReturnType<typeof useI18n>['t'] }) {
+  const cells: { label: string; value: number; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { label: t.statViews, value: stats?.views ?? 0, icon: 'eye-outline' },
+    { label: t.statFavorites, value: stats?.favs ?? 0, icon: 'heart-outline' },
+    { label: t.statBookings, value: stats?.pending_bookings ?? 0, icon: 'calendar-outline' },
+  ];
+  return (
+    <View style={styles.statsRow}>
+      {cells.map((c) => (
+        <View key={c.label} style={styles.statCard}>
+          <Ionicons name={c.icon} size={16} color={Colors.secondary} />
+          <Text variant="h3" color={Colors.text} style={styles.statValue}>{c.value}</Text>
+          <Text variant="xsmall" color={Colors.textMuted} numberOfLines={1}>{c.label}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -232,6 +264,17 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   titleRow: { alignItems: 'center', marginBottom: Spacing.md },
   heading: { marginBottom: Spacing.base },
+  statsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    gap: 2,
+  },
+  statValue: {},
   row: { marginBottom: Spacing.md },
   rowTop: { flexDirection: 'row' },
   rowImg: { width: 64, height: 64, borderRadius: Radius.sm, backgroundColor: Colors.surfaceMuted },

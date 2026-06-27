@@ -10,9 +10,10 @@ import { createListing, fetchMyListings } from '@/services/api/listings';
 
 /**
  * Create entry tab. Guest → Auth (return here). Authed → ONE-listing model:
- * reuse the user's existing non-deleted listing (any status) if there is one,
- * otherwise create a blank draft. Mirrors the web getOrCreateBlankDraft — the
- * backend rejects a 2nd create (oneListingOnly), so never start a second one.
+ *   - already has a listing (draft OR published, any non-deleted status) → send to
+ *     «Менің хабарландыруларым» (/my-listings); never start a second one (the
+ *     backend rejects it via oneListingOnly).
+ *   - no listing yet → create a blank draft and open the editor to fill it in.
  * Renders nothing persistent — it bounces the user onward on focus.
  */
 export default function CreateTab() {
@@ -28,10 +29,15 @@ export default function CreateTab() {
     }
     setError(false);
     try {
-      // Reopen the single listing if it exists; else create the first one.
+      // Has a listing already? → My Listings page. Otherwise create the first draft
+      // and open the editor.
       const res = await fetchMyListings();
       const existing = res.items.find((i) => i.status !== 'deleted');
-      const uuid = existing ? existing.uuid : await createListing();
+      if (existing) {
+        router.replace('/my-listings');
+        return;
+      }
+      const uuid = await createListing();
       router.replace(`/my/${uuid}/edit`);
     } catch {
       setError(true);

@@ -164,6 +164,9 @@ const ru: Strings = {
   statActive: 'Активные',
   statDraft: 'Черновик',
   statExpired: 'Истёкшие',
+  statViews: 'Просмотры',
+  statFavorites: 'В избранном',
+  statBookings: 'Брони',
   tabActive: 'Активные',
   tabDraft: 'Черновики',
   tabExpired: 'Истёкшие',
@@ -181,6 +184,8 @@ const ru: Strings = {
   actPromote: 'Продвинуть',
 
   // Billing / packages
+  publishPayTitle: 'Публикация объявления',
+  publishPayIntro: 'Выберите пакет для публикации. Цена и срок зависят от выбранного пакета.',
   packagesTitle: 'Пакеты',
   packagesEmpty: 'Пока нет пакетов.',
   packagesPay: 'Оплатить',
