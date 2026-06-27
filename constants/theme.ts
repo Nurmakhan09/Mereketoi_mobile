@@ -40,9 +40,6 @@ export const Palette = {
   border: '#D3D5D6',
   borderStrong: '#BDC0C2',
 
-  // Bottom-nav inactive (design prompt §3: uniform grey; navy is accent-only)
-  tabInactive: '#9AA1AD',
-
   // Semantic
   success: '#10B981',
   warning: '#F59E0B',

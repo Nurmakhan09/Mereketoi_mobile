@@ -1,9 +1,11 @@
 /**
- * One-listing model state (zustand). The website caps each user to ONE listing;
- * the bottom nav + screens need to know whether that listing exists and is
- * PUBLISHED (status past draft) to mirror layouts/app.php ($_hasPublished):
- *   - published → show the Calendar tab + the middle CTA becomes "Хабарландыруым"
- *   - not yet   → no Calendar tab + the middle CTA is the "+" Жариялау button
+ * One-listing model state (zustand). The website caps each user to ONE listing.
+ * `hasPublished` (a listing exists AND is past draft) drives the calendar SCREEN's
+ * publish-first gate (calendar.tsx) — it does NOT change the bottom bar, which is a
+ * FIXED 5-item bar (Басты бет · Іздеу · ＋Жариялау · Күнтізбе · Профиль) that never
+ * varies by auth/published state (see app/(tabs)/_layout.tsx, mirroring the web's
+ * app/Views/partials/bottom_nav.php). `pendingBookings` feeds the red pending-той-
+ * booking badge on the Calendar tab.
  *
  * Resolved from GET /my/listings (the single non-deleted listing). Refreshed on
  * auth + after any listing mutation (publish/archive/delete/create).
