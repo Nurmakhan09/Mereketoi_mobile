@@ -16,28 +16,31 @@ import { runHalykCheckout } from '@/features/billing/checkout';
 import { formatPrice } from '@/utils/format';
 
 /**
- * Publish payment page (web parity: /app/listings/{uuid}/publish). Publishing a
- * listing is a PAID action — the user picks one admin-managed package (price +
- * duration come straight from GET /api/v1/billing/packages, which the admin edits
- * at /admin/packages) and pays via Halyk. The listing goes active only after the
- * server confirms payment (Halyk callback activates it with the package's
- * duration_days). The amount is ALWAYS priced server-side from package_id — the
- * app only sends the choice.
+ * Listing payment page (web parity: /app/listings/{uuid}/publish). Going live is a
+ * PAID action — the user picks one admin-managed package (price + duration come
+ * straight from GET /api/v1/billing/packages, edited at /admin/packages) and pays via
+ * Halyk. The benefit applies only after the server confirms payment (Halyk callback),
+ * priced ALWAYS server-side from package_id — the app only sends the choice.
  *
- * Per owner decision (2026-06-27): both Android AND iOS open the Halyk checkout in
- * the in-app browser (no website redirect); every publish requires a package.
+ * Two modes via the `mode` param (the SAME listing_publish packages back both):
+ *   - default / 'publish' → purchase_type 'listing_publish' (DRAFT listing → active).
+ *   - 'renew'            → purchase_type 'listing_renew'  (ACTIVE/EXPIRED → extend).
+ * The backend chokepoint (InvoiceService::createInvoice) enforces the listing status
+ * per type, so a wrong-status charge is rejected before any money moves.
  *
- * SCOPE: this page is entered ONLY for a DRAFT listing (the publish button in the
- * editor shows for drafts; my-listings routes only the draft "Жариялау" here). The
- * backend's paid listing_publish activation publishes drafts only — renew/extend of
- * a non-draft listing must NOT come here (it would charge with no activation).
+ * Per owner decision (2026-06-27): both Android AND iOS open the Halyk checkout in the
+ * in-app browser (no website redirect); every publish/renew requires a package.
  */
 export default function PublishPaymentScreen() {
-  const { uuid } = useLocalSearchParams<{ uuid: string }>();
+  const { uuid, mode } = useLocalSearchParams<{ uuid: string; mode?: string }>();
   const { t, locale } = useI18n();
   const navigation = useNavigation();
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const refreshMine = useMyListingStore((s) => s.refresh);
+
+  const isRenew = mode === 'renew';
+  const title = isRenew ? t.renewPayTitle : t.publishPayTitle;
+  const intro = isRenew ? t.renewPayIntro : t.publishPayIntro;
 
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,8 +49,8 @@ export default function PublishPaymentScreen() {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: t.publishPayTitle });
-  }, [navigation, t.publishPayTitle]);
+    navigation.setOptions({ title });
+  }, [navigation, title]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,7 +75,7 @@ export default function PublishPaymentScreen() {
     setChecking(true);
     try {
       const result = await runHalykCheckout({
-        purchaseType: 'listing_publish',
+        purchaseType: isRenew ? 'listing_renew' : 'listing_publish',
         packageId: pkg.id,
         listingUuid: uuid,
       });
@@ -81,7 +84,7 @@ export default function PublishPaymentScreen() {
       if (result === 'paid') {
         await refreshMine(); // keep the nav (calendar tab + badge) in sync
         await refreshUser(); // first publish upgrades the role to provider
-        Alert.alert(t.appName, t.published);
+        Alert.alert(t.appName, isRenew ? t.listingRenewed : t.published);
         router.replace('/my-listings');
       } else if (result === 'failed') {
         Alert.alert(t.error, t.paymentFailed);
@@ -113,7 +116,7 @@ export default function PublishPaymentScreen() {
 
   return (
     <Screen scroll padded>
-      <Text variant="small" color={Colors.textMuted} style={styles.intro}>{t.publishPayIntro}</Text>
+      <Text variant="small" color={Colors.textMuted} style={styles.intro}>{intro}</Text>
 
       {packages.length === 0 ? (
         <EmptyState icon="pricetags-outline" title={t.packagesEmpty} />

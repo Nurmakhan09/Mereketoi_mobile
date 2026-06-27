@@ -45,7 +45,6 @@ export const Endpoints = {
   myListingImages: (uuid: string) => `/my/listings/${uuid}/images`,
   myListingImageDelete: (uuid: string, id: number) => `/my/listings/${uuid}/images/${id}/delete`,
   myListingImagesReorder: (uuid: string) => `/my/listings/${uuid}/images/reorder`,
-  myListingPublish: (uuid: string) => `/my/listings/${uuid}/publish`,
   myListingArchive: (uuid: string) => `/my/listings/${uuid}/archive`,
   myListingUnarchive: (uuid: string) => `/my/listings/${uuid}/unarchive`,
   myListingDelete: (uuid: string) => `/my/listings/${uuid}/delete`,

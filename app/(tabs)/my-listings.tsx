@@ -20,7 +20,6 @@ import {
   archiveListing,
   unarchiveListing,
   deleteListing,
-  publishListing,
 } from '@/services/api/listings';
 import { imageUrl } from '@/utils/imageUrl';
 import { PackagesSheet } from '@/features/billing/PackagesSheet';
@@ -128,13 +127,13 @@ export default function MyListingScreen() {
             onEdit={() => router.push(`/my/${listing.uuid}/edit`)}
             onCalendar={() => router.push('/calendar')}
             onView={() => listing.public_code && router.push(`/listing/${listing.uuid}`)}
-            // Publishing a DRAFT is the only paid action → payment page. Renew/extend
-            // of a non-draft (expired/expiring) is NOT routed here: the backend's paid
-            // listing_publish path only activates drafts, so charging would lose money
-            // with no effect. They keep the existing (free) publish call until the
-            // backend exposes a proper paid renew/extend flow.
+            // Both go-live actions are PAID (owner decision): a DRAFT publishes via the
+            // payment page; an active/expired listing renews/extends via the same page in
+            // renew mode (purchase_type listing_renew). The backend chokepoint
+            // (InvoiceService::createInvoice) enforces the listing status per type, so
+            // neither can be charged in the wrong state.
             onPublish={() => router.push(`/my/${listing.uuid}/publish`)}
-            onRenew={() => void act(() => publishListing(listing.uuid))}
+            onRenew={() => router.push(`/my/${listing.uuid}/publish?mode=renew`)}
             onArchive={() => confirmThen(t.confirmArchive, () => archiveListing(listing.uuid))}
             onUnarchive={() => void act(() => unarchiveListing(listing.uuid))}
             onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(listing.uuid))}

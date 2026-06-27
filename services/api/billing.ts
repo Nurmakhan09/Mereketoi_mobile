@@ -38,6 +38,7 @@ export interface BillingPackage {
 export type PaymentPurchaseType =
   | 'package'
   | 'listing_publish'
+  | 'listing_renew'
   | 'listing_boost'
   | 'featured_listing'
   | 'plan'

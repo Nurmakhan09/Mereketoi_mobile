@@ -22,16 +22,18 @@ export type CheckoutResult = 'paid' | 'failed' | 'pending';
  * Throws on a create/network error (the caller surfaces it); a non-'paid' return
  * is a normal terminal/timeout state, not an error.
  */
+const LISTING_TYPES: PaymentPurchaseType[] = ['listing_publish', 'listing_renew'];
+
 export async function runHalykCheckout(params: {
   purchaseType: PaymentPurchaseType;
   packageId: number;
-  /** Required for 'listing_publish' — ties the invoice to the listing being published. */
+  /** Required for 'listing_publish' / 'listing_renew' — ties the invoice to the listing. */
   listingUuid?: string;
 }): Promise<CheckoutResult> {
   const res = await createHalykPayment({
     purchase_type: params.purchaseType,
     package_id: params.packageId,
-    listing_uuid: params.purchaseType === 'listing_publish' ? params.listingUuid : undefined,
+    listing_uuid: LISTING_TYPES.includes(params.purchaseType) ? params.listingUuid : undefined,
   });
 
   await WebBrowser.openBrowserAsync(res.checkout_url);

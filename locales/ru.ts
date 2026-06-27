@@ -186,6 +186,9 @@ const ru: Strings = {
   // Billing / packages
   publishPayTitle: 'Публикация объявления',
   publishPayIntro: 'Выберите пакет для публикации. Цена и срок зависят от выбранного пакета.',
+  renewPayTitle: 'Продление объявления',
+  renewPayIntro: 'Выберите пакет для продления. Цена и срок зависят от выбранного пакета.',
+  listingRenewed: 'Срок объявления продлён',
   packagesTitle: 'Пакеты',
   packagesEmpty: 'Пока нет пакетов.',
   packagesPay: 'Оплатить',
