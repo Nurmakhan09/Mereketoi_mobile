@@ -1,10 +1,11 @@
 /**
  * Design tokens — mirrored from the backend's source of truth:
  *   - public/assets/css/tokens.css (web palette)
- *   - GET /api/v1/app-config → brand (runtime mirror, navy + gold rebrand 2026-06)
+ *   - GET /api/v1/app-config → brand (runtime mirror; gold accent removed → navy, 2026-06-25)
  *
  * Brand = deep blue navy (#000099) leads (CTA, links, active tabs, text);
- * gold (#A48C68) is the accent (VIP/badges/chrome). Backgrounds are white.
+ * deep navy (#0B1F4D) is the accent (VIP/badges/chrome) — the warm-gold accent
+ * was removed 2026-06-25 to match the web. Backgrounds are white.
  * `app-config.brand` may override the colors at runtime (colors only — never
  * fonts/layout); see stores/appConfigStore.ts.
  */
@@ -19,10 +20,10 @@ export const Palette = {
   primarySoft: '#E5E5F5',
   primarySoft2: '#EDEDF7',
 
-  // Gold accent (secondary)
-  secondary: '#A48C68',
-  secondaryHover: '#8E7856',
-  secondarySoft: '#F3EEE6',
+  // Navy accent (secondary) — gold removed 2026-06-25, matches web tokens.css
+  secondary: '#0B1F4D',
+  secondaryHover: '#08183A',
+  secondarySoft: '#E8EAF3',
 
   // Surfaces
   background: '#FFFFFF',
@@ -39,7 +40,7 @@ export const Palette = {
   border: '#D3D5D6',
   borderStrong: '#BDC0C2',
 
-  // Bottom-nav inactive (design prompt §3: uniform grey, gold is accent-only)
+  // Bottom-nav inactive (design prompt §3: uniform grey; navy is accent-only)
   tabInactive: '#9AA1AD',
 
   // Semantic

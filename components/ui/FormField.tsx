@@ -46,26 +46,17 @@ interface InputProps extends TextInputProps {
 }
 
 /** Labeled text input with hint/error + optional password eye toggle + counter. */
-export function FormField({ label, hint, error, required, secure, counter, style, onFocus, onBlur, ...rest }: InputProps) {
+export function FormField({ label, hint, error, required, secure, counter, style, ...rest }: InputProps) {
   const [hidden, setHidden] = useState(!!secure);
-  const [focused, setFocused] = useState(false);
   const count = typeof rest.value === 'string' ? rest.value.length : 0;
   return (
     <Field label={label} hint={hint} error={error} required={required}>
-      <View style={[styles.inputWrap, focused && styles.inputFocused, error ? styles.inputError : null]}>
+      <View style={[styles.inputWrap, error ? styles.inputError : null]}>
         <TextInput
           style={[styles.input, style]}
           placeholderTextColor={Colors.textFaint}
           secureTextEntry={hidden}
           {...rest}
-          onFocus={(e) => {
-            setFocused(true);
-            onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            onBlur?.(e);
-          }}
         />
         {secure ? (
           <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8} style={styles.eye}>

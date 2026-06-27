@@ -158,40 +158,47 @@ export default function SearchScreen() {
   );
 
   return (
-    <FlatList
-      style={styles.fill}
-      data={items}
-      keyExtractor={(it) => it.uuid}
-      numColumns={2}
-      columnWrapperStyle={styles.col}
-      contentContainerStyle={styles.list}
-      ListHeaderComponent={header}
-      keyboardShouldPersistTaps="handled"
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.4}
-      renderItem={({ item }) => (
-        <View style={styles.cardCell}>
-          <ListingCard
-            item={item}
-            onPress={() => router.push(`/listing/${item.uuid}`)}
-            favorited={isAuthed && favoriteIds.has(item.uuid)}
-            onToggleFavorite={() => onFavorite(item.uuid)}
-          />
-        </View>
-      )}
-      ListEmptyComponent={
-        loading ? (
-          <Loading />
-        ) : error ? (
-          <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={() => load(1)} />
-        ) : (
-          <EmptyState icon="search-outline" title={t.noResults} subtitle={t.noResultsHint} />
-        )
-      }
-      ListFooterComponent={
-        loadingMore ? <ActivityIndicator color={Colors.primary} style={styles.footer} /> : null
-      }
-    />
+    <View style={styles.fill}>
+      {/* Filter bar kept OUTSIDE the FlatList. As a list header it was remounted
+          every time results reloaded, which blurred the search TextInput and
+          dismissed the keyboard on each keystroke. Fixed at the top, it stays
+          mounted and the input keeps focus. */}
+      {header}
+      <FlatList
+        style={styles.fill}
+        data={items}
+        keyExtractor={(it) => it.uuid}
+        numColumns={2}
+        columnWrapperStyle={styles.col}
+        contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.4}
+        renderItem={({ item }) => (
+          <View style={styles.cardCell}>
+            <ListingCard
+              item={item}
+              onPress={() => router.push(`/listing/${item.uuid}`)}
+              favorited={isAuthed && favoriteIds.has(item.uuid)}
+              onToggleFavorite={() => onFavorite(item.uuid)}
+            />
+          </View>
+        )}
+        ListEmptyComponent={
+          loading ? (
+            <Loading />
+          ) : error ? (
+            <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={() => load(1)} />
+          ) : (
+            <EmptyState icon="search-outline" title={t.noResults} subtitle={t.noResultsHint} />
+          )
+        }
+        ListFooterComponent={
+          loadingMore ? <ActivityIndicator color={Colors.primary} style={styles.footer} /> : null
+        }
+      />
+    </View>
   );
 }
 

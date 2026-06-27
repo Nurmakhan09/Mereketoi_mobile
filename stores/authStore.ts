@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { User } from '@/types';
 import { getItem, setItem, deleteItem, StorageKeys } from '@/services/storage';
 import { setUnauthorizedHandler } from '@/services/api/client';
-import { fetchMe, logout as apiLogout } from '@/services/api/auth';
+import { fetchMe, logout as apiLogout, deleteAccount as apiDeleteAccount } from '@/services/api/auth';
 import { unregisterPushToken } from '@/services/api/push';
 
 export type AuthStatus = 'loading' | 'guest' | 'authed';
@@ -27,6 +27,8 @@ interface AuthState {
   clearSession: () => Promise<void>;
   /** Full logout: revoke server-side token, then clear locally. */
   logout: () => Promise<void>;
+  /** Permanently delete the account server-side, then clear locally. Throws on failure. */
+  deleteAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -94,6 +96,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // ignore network/401 — clear locally regardless
     }
+    await get().clearSession();
+  },
+
+  deleteAccount: async () => {
+    // Drop this device's push token first, while the Bearer token is still valid.
+    try {
+      const pushToken = await getItem(StorageKeys.pushToken);
+      if (pushToken) {
+        await unregisterPushToken(pushToken).catch(() => {});
+        await deleteItem(StorageKeys.pushToken);
+      }
+    } catch {
+      // ignore — deletion proceeds regardless
+    }
+    // Let a failure propagate so the UI can show it and keep the session intact.
+    await apiDeleteAccount();
     await get().clearSession();
   },
 }));

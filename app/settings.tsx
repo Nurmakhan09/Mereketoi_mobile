@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -10,6 +10,7 @@ import { FormField } from '@/components/ui/FormField';
 import { Colors, Spacing } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import { updateProfile, changePassword } from '@/services/api/auth';
 import { formatPhone } from '@/utils/format';
 import { ApiError } from '@/types/api';
@@ -20,6 +21,9 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const setSession = useAuthStore((s) => s.setSession);
   const token = useAuthStore((s) => s.token);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const clearFav = useFavoritesStore((s) => s.clear);
+  const [deleting, setDeleting] = useState(false);
 
   // Name section: read-only until "Edit" is pressed.
   const [editingName, setEditingName] = useState(false);
@@ -84,6 +88,30 @@ export default function SettingsScreen() {
     setEditingPw(false);
   };
 
+  // Permanent account deletion (store requirement). Two taps: button → confirm dialog.
+  const onDeleteAccount = () => {
+    Alert.alert(t.deleteAccount, t.deleteAccountConfirm, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.deleteAccountAction,
+        style: 'destructive',
+        onPress: async () => {
+          setDeleting(true);
+          try {
+            await deleteAccount();
+            clearFav();
+            router.replace('/');
+            Alert.alert(t.appName, t.accountDeleted);
+          } catch (e) {
+            Alert.alert(t.error, e instanceof ApiError ? e.message : t.errorNetwork);
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <Screen scroll padded>
       {/* Account */}
@@ -128,6 +156,23 @@ export default function SettingsScreen() {
           <Button title={t.changePassword} variant="outline" icon="lock-closed-outline" onPress={() => setEditingPw(true)} />
         )}
       </Card>
+
+      {/* Danger zone — permanent account deletion (App Store 5.1.1 v / Google Play). */}
+      <Text variant="h3" color={Colors.error} style={styles.section}>
+        {t.dangerZone}
+      </Text>
+      <Card padded>
+        <Text variant="small" color={Colors.textMuted} style={styles.dangerHint}>
+          {t.deleteAccountHint}
+        </Text>
+        <Button
+          title={t.deleteAccount}
+          variant="danger"
+          icon="trash-outline"
+          loading={deleting}
+          onPress={onDeleteAccount}
+        />
+      </Card>
     </Screen>
   );
 }
@@ -147,6 +192,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   section: { marginTop: Spacing.lg, marginBottom: Spacing.md },
+  dangerHint: { marginBottom: Spacing.md },
   row: { marginBottom: Spacing.md },
   btn: { marginTop: Spacing.sm },
   actionRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },

@@ -19,6 +19,7 @@ export const Endpoints = {
   me: '/me',
   meProfile: '/me/profile',
   mePassword: '/me/password',
+  meDelete: '/me/delete',
 
   // Public reads
   listings: '/listings',

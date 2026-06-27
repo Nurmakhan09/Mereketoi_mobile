@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Modal, View, Pressable, StyleSheet } from 'react-native';
+import { Modal, View, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { Text } from './Text';
@@ -16,22 +16,28 @@ export function Sheet({ visible, onClose, title, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.base }]} onPress={(e) => e.stopPropagation()}>
-          <View style={styles.handle} />
-          {title ? (
-            <Text variant="h3" color={Colors.text} style={styles.title}>
-              {title}
-            </Text>
-          ) : null}
-          {children}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable style={styles.overlay} onPress={onClose}>
+          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.base }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.handle} />
+            {title ? (
+              <Text variant="h3" color={Colors.text} style={styles.title}>
+                {title}
+              </Text>
+            ) : null}
+            {children}
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.45)',

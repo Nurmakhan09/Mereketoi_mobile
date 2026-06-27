@@ -244,16 +244,23 @@ const kk = {
   // Settings
   settingsTitle: 'Параметрлер',
   account: 'Аккаунт',
-  editName: 'Никнейм өзгерту',
-  name: 'Никнейм',
+  editName: 'Атын өзгерту',
+  name: 'Аты',
   email: 'Email',
   phone: 'Телефон',
   changePassword: 'Құпия сөзді өзгерту',
   currentPassword: 'Ағымдағы құпия сөз',
   newPassword: 'Жаңа құпия сөз',
   confirmNewPassword: 'Жаңа құпия сөзді растау',
-  nameSaved: 'Никнейм сақталды',
+  nameSaved: 'Аты сақталды',
   passwordChanged: 'Құпия сөз өзгертілді',
+  dangerZone: 'Қауіпті аймақ',
+  deleteAccount: 'Аккаунтты жою',
+  deleteAccountHint:
+    'Аккаунтыңыз бен барлық деректеріңіз (хабарландырулар, броньдар, таңдаулылар) біржола өшіріледі. Бұл әрекетті кері қайтару мүмкін емес.',
+  deleteAccountConfirm: 'Аккаунтты жоюды растайсыз ба? Бұл әрекетті кері қайтару мүмкін емес.',
+  deleteAccountAction: 'Иә, жою',
+  accountDeleted: 'Аккаунт жойылды.',
 
   // Calendar
   calendarTitle: 'Күнтізбе',

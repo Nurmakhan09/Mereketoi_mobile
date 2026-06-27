@@ -35,3 +35,12 @@ export function changePassword(input: {
 }) {
   return apiPost<{ changed: boolean }>(Endpoints.mePassword, input);
 }
+
+/**
+ * POST /me/delete — permanently delete the current account + all related data.
+ * Required by the App Store (5.1.1 v) & Google Play account-deletion policies.
+ * The Bearer token is invalidated server-side; the caller clears the session.
+ */
+export function deleteAccount() {
+  return apiPost<{ deleted: boolean }>(Endpoints.meDelete);
+}

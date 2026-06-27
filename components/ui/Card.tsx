@@ -7,7 +7,11 @@ interface Props {
   onPress?: () => void;
   style?: ViewStyle;
   padded?: boolean;
-  /** Gold 1px border (home white cards, master-spec §1.1 gold chrome). */
+  /**
+   * Home white-card accent border. Kept as a prop for API compatibility, but the
+   * colored (formerly gold) border was dropped 2026-06-25 to match the web — these
+   * cards now use the same neutral grey border as every other card.
+   */
   gold?: boolean;
 }
 
@@ -15,7 +19,7 @@ export function Card({ children, onPress, style, padded = true, gold = false }: 
   const cardStyle = [
     styles.card,
     padded && styles.padded,
-    gold && { borderColor: Colors.secondary },
+    gold && { borderColor: Colors.border },
     style,
   ];
   if (onPress) {
