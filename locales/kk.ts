@@ -69,6 +69,9 @@ const kk = {
   filterDate: 'Күні',
   anyDate: 'Кез келген күн',
   allPriceTypes: 'Барлық бағалар',
+  priceRange: 'Баға, ₸',
+  priceFrom: 'бастап',
+  priceTo: 'дейін',
   applyFilters: 'Қолдану',
   filterDateHint: 'Таңдалған күні бос хабарландырулар',
   // Help center

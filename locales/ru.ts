@@ -65,6 +65,9 @@ const ru: Strings = {
   filterDate: 'Дата',
   anyDate: 'Любая дата',
   allPriceTypes: 'Все цены',
+  priceRange: 'Цена, ₸',
+  priceFrom: 'от',
+  priceTo: 'до',
   applyFilters: 'Применить',
   filterDateHint: 'Свободные на выбранную дату',
   // Help center

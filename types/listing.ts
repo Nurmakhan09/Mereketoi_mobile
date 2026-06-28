@@ -199,6 +199,8 @@ export interface CatalogFilters {
   city?: string; // slug
   category?: string; // slug
   price_type?: PriceType;
+  price_min?: number; // ₸ — backend filters price_amount >= when > 0
+  price_max?: number; // ₸ — backend filters price_amount <= when > 0
   date?: string; // YYYY-MM-DD — availability filter (only listings free that day)
   sort?: SortOption;
   page?: number;

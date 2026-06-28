@@ -62,6 +62,8 @@ export default function SearchScreen() {
   const [city, setCity] = useState<string | undefined>(params.city);
   const [sort, setSort] = useState<SortOption>('newest');
   const [priceType, setPriceType] = useState<PriceType | undefined>(undefined);
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
   const [date, setDate] = useState<string | undefined>(undefined);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -104,12 +106,14 @@ export default function SearchScreen() {
 
   // Count of applied filters (excludes the free-text query + default sort) → button badge.
   const activeCount =
-    (category ? 1 : 0) + (city ? 1 : 0) + (priceType ? 1 : 0) + (date ? 1 : 0) + (sort !== 'newest' ? 1 : 0);
+    (category ? 1 : 0) + (city ? 1 : 0) + (priceType ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (date ? 1 : 0) + (sort !== 'newest' ? 1 : 0);
 
   const clearAll = () => {
     setCategory(undefined);
     setCity(undefined);
     setPriceType(undefined);
+    setPriceMin('');
+    setPriceMax('');
     setDate(undefined);
     setSort('newest');
   };
@@ -124,7 +128,12 @@ export default function SearchScreen() {
         setLoadingMore(true);
       }
       try {
-        const res = await fetchListings({ q, category, city, sort, price_type: priceType, date, page: pageToLoad });
+        const res = await fetchListings({
+          q, category, city, sort, price_type: priceType,
+          price_min: priceMin ? parseInt(priceMin, 10) : undefined,
+          price_max: priceMax ? parseInt(priceMax, 10) : undefined,
+          date, page: pageToLoad,
+        });
         if (myReq !== reqId.current) return; // stale
         setPages(res.meta.pages);
         setPage(res.meta.page);
@@ -138,7 +147,7 @@ export default function SearchScreen() {
         }
       }
     },
-    [q, category, city, sort, priceType, date],
+    [q, category, city, sort, priceType, priceMin, priceMax, date],
   );
 
   // Reload page 1 whenever any filter changes (query debounced).
@@ -227,6 +236,30 @@ export default function SearchScreen() {
             <Pill key={p} label={priceLabel[p]} selected={priceType === p} onPress={() => setPriceType(p)} />
           ))}
         </PillRow>
+
+        {/* Price range (₸) */}
+        <View style={styles.fRow}>
+          <Text variant="small" color={Colors.textMuted} style={styles.fLabel}>{t.priceRange}</Text>
+          <View style={styles.priceRow}>
+            <TextInput
+              value={priceMin}
+              onChangeText={(v) => setPriceMin(v.replace(/\D/g, ''))}
+              placeholder={t.priceFrom}
+              placeholderTextColor={Colors.textFaint}
+              keyboardType="number-pad"
+              style={[styles.priceInput, styles.flex1]}
+            />
+            <Text variant="small" color={Colors.textFaint}>—</Text>
+            <TextInput
+              value={priceMax}
+              onChangeText={(v) => setPriceMax(v.replace(/\D/g, ''))}
+              placeholder={t.priceTo}
+              placeholderTextColor={Colors.textFaint}
+              keyboardType="number-pad"
+              style={[styles.priceInput, styles.flex1]}
+            />
+          </View>
+        </View>
 
         {/* Sort */}
         <PillRow label={t.sort}>
@@ -329,6 +362,11 @@ const styles = StyleSheet.create({
   fLabel: { fontWeight: '700', marginBottom: Spacing.xs },
   fHint: { marginBottom: Spacing.sm },
   fScroll: { gap: Spacing.sm, paddingVertical: 2, paddingRight: Spacing.base },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  priceInput: {
+    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, color: Colors.textBody, fontSize: 15,
+  },
   fActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
   flex1: { flex: 1 },
   footer: { paddingVertical: Spacing.base },
