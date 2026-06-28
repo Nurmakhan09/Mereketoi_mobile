@@ -62,8 +62,8 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="forgot-password" />
+            <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'fade' }} />
+            <Stack.Screen name="forgot-password" options={{ animation: 'fade' }} />
             <Stack.Screen name="listing/[uuid]/index" options={pushedHeader} />
             <Stack.Screen name="listing/[uuid]/calendar" options={pushedHeader} />
             <Stack.Screen name="my/[uuid]/edit" options={pushedHeader} />
@@ -71,7 +71,7 @@ export default function RootLayout() {
             <Stack.Screen name="my/[uuid]/calendar" options={pushedHeader} />
             <Stack.Screen name="calendars" options={pushedHeader} />
             <Stack.Screen name="calendar-day" />
-            <Stack.Screen name="set-nickname" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="set-nickname" options={{ presentation: 'modal', animation: 'fade' }} />
             <Stack.Screen name="favorites" options={pushedHeader} />
             <Stack.Screen name="toi/index" options={pushedHeader} />
             <Stack.Screen name="toi/history" options={pushedHeader} />

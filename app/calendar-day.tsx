@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, TextInput, Pressable, Alert, Linking, Share } from 'react-native';
-import { router, useLocalSearchParams, Redirect } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/ui/Screen';
@@ -51,6 +51,7 @@ export default function CalendarDayScreen() {
   const date = typeof params.date === 'string' ? params.date : todayIso();
   const hall = params.hall ? parseInt(params.hall, 10) || 0 : 0;
   const { t, locale } = useI18n();
+  const navigation = useNavigation();
 
   const uuid = useMyListingStore((s) => s.uuid);
   const hasPublished = useMyListingStore((s) => s.hasPublished);
@@ -162,7 +163,13 @@ export default function CalendarDayScreen() {
   const js = new Date(date + 'T00:00:00');
   const pretty = `${js.getDate()} ${months[js.getMonth()]} ${js.getFullYear()}`;
   const weekday = wd[(js.getDay() + 6) % 7];
-  const go = (d: string) => router.replace({ pathname: '/calendar-day', params: { date: d, hall: String(hall) } });
+  // Day switch animates by direction: prev («‹») slides from the LEFT, next («›») from
+  // the RIGHT (replace re-mounts this screen with the new date). Set the option just
+  // before navigating so the incoming instance uses the right direction.
+  const go = (d: string, dir: 'prev' | 'next') => {
+    navigation.setOptions({ animation: dir === 'prev' ? 'slide_from_left' : 'slide_from_right' });
+    router.replace({ pathname: '/calendar-day', params: { date: d, hall: String(hall) } });
+  };
 
   return (
     <Screen scroll padded edgeTop>
@@ -173,14 +180,14 @@ export default function CalendarDayScreen() {
 
       {/* Date header with prev/next */}
       <View style={styles.dayHead}>
-        <Pressable disabled={!canPrev} onPress={() => go(prevDate)} style={[styles.arr, !canPrev && styles.arrOff]} hitSlop={6}>
+        <Pressable disabled={!canPrev} onPress={() => go(prevDate, 'prev')} style={[styles.arr, !canPrev && styles.arrOff]} hitSlop={6}>
           <Ionicons name="chevron-back" size={24} color={canPrev ? Colors.text : Colors.textFaint} />
         </Pressable>
         <View style={styles.dayCenter}>
           <Text variant="h2" color={Colors.text} center>{pretty}</Text>
           <Text variant="small" color={Colors.textMuted} center>{weekday}</Text>
         </View>
-        <Pressable onPress={() => go(nextDate)} style={styles.arr} hitSlop={6}>
+        <Pressable onPress={() => go(nextDate, 'next')} style={styles.arr} hitSlop={6}>
           <Ionicons name="chevron-forward" size={24} color={Colors.text} />
         </Pressable>
       </View>
