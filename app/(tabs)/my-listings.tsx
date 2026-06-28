@@ -17,14 +17,16 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import {
   fetchMyListings,
+  fetchMyListing,
   archiveListing,
   unarchiveListing,
   deleteListing,
 } from '@/services/api/listings';
 import { imageUrl } from '@/utils/imageUrl';
+import { formatDate, formatPrice } from '@/utils/format';
 import { PackagesSheet } from '@/features/billing/PackagesSheet';
 import { WEB_URL } from '@/constants/config';
-import { OwnerListing, OwnerStats } from '@/types';
+import { OwnerListing, OwnerListingDetail, OwnerStats } from '@/types';
 
 /**
  * "Хабарландыруым" — the ONE listing the user owns (one-listing model). Reached from
@@ -38,6 +40,7 @@ export default function MyListingScreen() {
   const refreshMine = useMyListingStore((s) => s.refresh);
 
   const [listing, setListing] = useState<OwnerListing | null>(null);
+  const [detail, setDetail] = useState<OwnerListingDetail | null>(null);
   const [stats, setStats] = useState<OwnerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -48,8 +51,16 @@ export default function MyListingScreen() {
     setError(false);
     try {
       const res = await fetchMyListings();
-      setListing(res.items.find((i) => i.status !== 'deleted') ?? null);
+      const mine = res.items.find((i) => i.status !== 'deleted') ?? null;
+      setListing(mine);
       setStats(res.stats ?? null);
+      // Detail fills the "full info" block (contact phone + full description, which the
+      // list shape omits). Best-effort — the block degrades gracefully without it.
+      if (mine) {
+        fetchMyListing(mine.uuid).then(setDetail).catch(() => setDetail(null));
+      } else {
+        setDetail(null);
+      }
     } catch {
       setError(true);
     } finally {
@@ -139,6 +150,7 @@ export default function MyListingScreen() {
             onDelete={() => confirmThen(t.confirmDelete, () => deleteListing(listing.uuid))}
             onPromote={onPromote}
           />
+          <InfoBlock item={listing} detail={detail} t={t} />
           </>
         )}
       </ScrollView>
@@ -238,6 +250,48 @@ function StatsRow({ stats, t }: { stats: OwnerStats | null; t: ReturnType<typeof
   );
 }
 
+/** Full-info block — web hub.php "Толық ақпарат" parity (label/value rows). */
+function InfoBlock({
+  item,
+  detail,
+  t,
+}: {
+  item: OwnerListing;
+  detail: OwnerListingDetail | null;
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  const price = formatPrice(item.price_amount ?? 0, item.price_type, {
+    negotiable: t.priceNegotiable,
+    notSpecified: '—',
+    tenge: t.tenge,
+  });
+  const rows: { label: string; value: string; long?: boolean }[] = [
+    { label: t.fieldTitle, value: item.title || '—' },
+    { label: t.fieldCategory, value: item.category_name || '—' },
+    { label: t.fieldRegion, value: item.location_text || '—' },
+    { label: t.fieldPrice, value: price },
+    { label: t.fieldPhone, value: detail?.contact_phone || '—' },
+  ];
+  if (item.short_description) rows.push({ label: t.fieldShortDesc, value: item.short_description });
+  if (detail?.full_description) rows.push({ label: t.fieldDescription, value: detail.full_description, long: true });
+  if (item.published_at) rows.push({ label: t.listingPublished, value: formatDate(item.published_at) });
+  if (item.expires_at) rows.push({ label: t.listingExpires, value: formatDate(item.expires_at) });
+
+  return (
+    <View style={styles.infoWrap}>
+      <Text variant="small" color={Colors.textMuted} style={styles.infoTitle}>{t.hubInfoTitle}</Text>
+      <Card padded={false} style={styles.infoCard}>
+        {rows.map((r, i) => (
+          <View key={r.label} style={[styles.infoRow, i > 0 && styles.infoDivider]}>
+            <Text variant="xsmall" color={Colors.textMuted} style={styles.infoLabel}>{r.label}</Text>
+            <Text variant="small" color={Colors.text} style={styles.infoValue}>{r.value}</Text>
+          </View>
+        ))}
+      </Card>
+    </View>
+  );
+}
+
 function ActBtn({
   icon,
   label,
@@ -273,6 +327,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statValue: {},
+  infoWrap: { marginBottom: Spacing.md },
+  infoTitle: { fontWeight: '700', letterSpacing: 0.4, marginBottom: Spacing.sm },
+  infoCard: {},
+  infoRow: { flexDirection: 'row', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: Spacing.base },
+  infoDivider: { borderTopWidth: 1, borderTopColor: Colors.surfaceMuted },
+  infoLabel: { width: 104 },
+  infoValue: { flex: 1 },
   row: { marginBottom: Spacing.md },
   rowTop: { flexDirection: 'row' },
   rowImg: { width: 64, height: 64, borderRadius: Radius.sm, backgroundColor: Colors.surfaceMuted },

@@ -66,7 +66,12 @@ export interface OwnerListing {
   district_id: number | null;
   main_image: string | null;
   expires_at: string | null;
+  published_at?: string | null;
   created_at: string | null;
+  // Enriched for the hub "full info" block (web hub.php parity). Optional — the
+  // backend adds these to ownerShape; until then they render as «—».
+  category_name?: string | null;
+  location_text?: string | null;
 }
 
 /** Owner full detail (GET /my/listings/{uuid}) = ownerShape + private fields. */
