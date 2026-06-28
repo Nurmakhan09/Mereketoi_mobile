@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -98,6 +98,18 @@ export default function TabLayout() {
         options={{
           title: t.tabCreate,
           tabBarIcon: ({ focused }) => <AddTabIcon focused={focused} />,
+        }}
+        listeners={{
+          // Guests must NOT mount create.tsx: push the auth modal from the ROOT context on
+          // the gesture (the GuestGate pattern), instead of letting create.tsx fire a
+          // cross-navigator router.replace inside useFocusEffect — that asymmetry can
+          // intermittently redbox / boomerang on the New Architecture.
+          tabPress: (e) => {
+            if (!isAuthed) {
+              e.preventDefault();
+              router.push({ pathname: '/auth', params: { returnTo: '/create' } });
+            }
+          },
         }}
       />
       <Tabs.Screen

@@ -24,7 +24,11 @@ export default function CreateTab() {
   const start = useCallback(async () => {
     if (status === 'loading') return;
     if (status !== 'authed') {
-      router.replace({ pathname: '/auth', params: { returnTo: '/create' } });
+      // Defensive fallback: the create tab's tabPress listener already gates guests
+      // before this screen mounts; a deep-link straight to /create still lands here.
+      // push (not replace) so the modal stacks cleanly rather than coercing a
+      // cross-navigator replace from within the focus effect.
+      router.push({ pathname: '/auth', params: { returnTo: '/create' } });
       return;
     }
     setError(false);
