@@ -1,5 +1,6 @@
+import { useCallback, useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,6 +13,7 @@ import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
 import { Locale } from '@/stores/localeStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { fetchUnreadCount } from '@/services/api/notifications';
 
 export default function ProfileScreen() {
   const { t } = useI18n();
@@ -21,6 +23,16 @@ export default function ProfileScreen() {
   const logout = useAuthStore((s) => s.logout);
   const clearFav = useFavoritesStore((s) => s.clear);
   const isAuthed = status === 'authed';
+
+  // Unread notifications → red badge on the header bell + the Хабарламалар row.
+  // Refetched on focus so it clears after the inbox auto-marks everything read.
+  const [unread, setUnread] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthed) fetchUnreadCount().then(setUnread).catch(() => {});
+      else setUnread(0);
+    }, [isAuthed]),
+  );
 
   const onLogout = () => {
     Alert.alert('', t.confirmLogout, [
@@ -39,7 +51,29 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.lg }]}>
-      <Logo size="sm" style={styles.brandLogo} />
+      {/* Top bar — notifications (left, unread badge) · logo · history (right). Icons authed-only. */}
+      <View style={styles.topBar}>
+        {isAuthed ? (
+          <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.topIcon}>
+            <Ionicons name="notifications-outline" size={24} color={Colors.primary} />
+            {unread > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text variant="xsmall" color={Colors.white} style={styles.bellBadgeTxt}>{unread > 9 ? '9+' : unread}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        ) : (
+          <View style={styles.topIcon} />
+        )}
+        <Logo size="sm" />
+        {isAuthed ? (
+          <Pressable onPress={() => router.push('/toi/history')} hitSlop={8} style={styles.topIcon}>
+            <Ionicons name="time-outline" size={24} color={Colors.primary} />
+          </Pressable>
+        ) : (
+          <View style={styles.topIcon} />
+        )}
+      </View>
       {/* Header */}
       {isAuthed && user ? (
         <View style={styles.userHead}>
@@ -83,7 +117,7 @@ export default function ProfileScreen() {
       {isAuthed ? (
         <Card style={styles.menu} padded={false}>
           <MenuItem icon="heart-outline" label={t.tabFavorites} onPress={() => router.push('/favorites')} />
-          <MenuItem icon="notifications-outline" label={t.notificationsTitle} onPress={() => router.push('/notifications')} />
+          <MenuItem icon="notifications-outline" label={t.notificationsTitle} badge={unread} onPress={() => router.push('/notifications')} />
           <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} last />
         </Card>
       ) : null}
@@ -119,11 +153,13 @@ function MenuItem({
   label,
   onPress,
   last,
+  badge,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
   last?: boolean;
+  badge?: number;
 }) {
   return (
     <Pressable style={[styles.item, !last && styles.itemDivider]} onPress={onPress}>
@@ -131,6 +167,11 @@ function MenuItem({
       <Text variant="body" color={Colors.textBody} style={styles.itemLabel}>
         {label}
       </Text>
+      {badge && badge > 0 ? (
+        <View style={styles.itemBadge}>
+          <Text variant="xsmall" color={Colors.white} style={styles.bellBadgeTxt}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      ) : null}
       <Ionicons name="chevron-forward" size={18} color={Colors.textFaint} />
     </Pressable>
   );
@@ -170,7 +211,17 @@ function LangSwitch() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  brandLogo: { alignSelf: 'center', marginBottom: Spacing.lg },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.lg },
+  topIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  bellBadge: {
+    position: 'absolute', top: 2, right: 2, minWidth: 16, height: 16, paddingHorizontal: 3,
+    borderRadius: 8, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+  },
+  bellBadgeTxt: { fontWeight: '800', fontSize: 10, lineHeight: 13 },
+  itemBadge: {
+    minWidth: 18, height: 18, paddingHorizontal: 4, marginRight: Spacing.sm,
+    borderRadius: 9, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+  },
   userHead: { alignItems: 'center', marginBottom: Spacing.xl },
   avatar: {
     width: 80,

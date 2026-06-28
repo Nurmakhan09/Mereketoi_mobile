@@ -34,7 +34,6 @@ export default function NotificationsScreen() {
 
   // inbox
   const [items, setItems] = useState<AppNotification[]>([]);
-  const [unread, setUnread] = useState(0);
   // reminders
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
@@ -55,9 +54,12 @@ export default function NotificationsScreen() {
     try {
       const [inbox, rem] = await Promise.all([fetchNotifications({ limit: 50 }), fetchReminders()]);
       setItems(inbox.items);
-      setUnread(inbox.unread);
       setReminders(rem.items);
       navigation.setOptions({ title: t.notificationsTitle });
+      // Entering the inbox marks everything read (web parity: NotificationsController::index).
+      // The per-row unread highlight stays for THIS view (you still see what was new); the
+      // unread badge here and on the profile bell clears right away.
+      if (inbox.unread > 0) markAllNotificationsRead().catch(() => {});
     } catch {
       setError(true);
     } finally {
@@ -72,17 +74,10 @@ export default function NotificationsScreen() {
   const onItem = async (n: AppNotification) => {
     if (!n.is_read) {
       setItems((prev) => prev.map((i) => (i.id === n.id ? { ...i, is_read: true } : i)));
-      setUnread((u) => Math.max(0, u - 1));
       markNotificationRead(n.id).catch(() => {});
     }
     // Deep-link via the shared mapper (same logic as a push-notification tap).
     navigateFromActionUrl(n.action_url);
-  };
-
-  const onMarkAll = () => {
-    setItems((prev) => prev.map((i) => ({ ...i, is_read: true })));
-    setUnread(0);
-    markAllNotificationsRead().catch(() => {});
   };
 
   const onAddReminder = async () => {
@@ -133,13 +128,6 @@ export default function NotificationsScreen() {
           </Pressable>
         ))}
       </View>
-      {tab === 'inbox' && unread > 0 ? (
-        <Pressable onPress={onMarkAll} hitSlop={8} style={styles.markAll}>
-          <Text variant="small" color={Colors.primary}>
-            {t.markAllRead}
-          </Text>
-        </Pressable>
-      ) : null}
       {tab === 'reminders' ? (
         <Button title={t.addReminder} icon="add" onPress={() => setAddOpen(true)} style={styles.addBtn} />
       ) : null}
@@ -247,7 +235,6 @@ const styles = StyleSheet.create({
   },
   seg: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.sm, alignItems: 'center' },
   segActive: { backgroundColor: Colors.primary },
-  markAll: { alignSelf: 'flex-end', marginTop: Spacing.md },
   addBtn: { marginTop: Spacing.md },
   list: { paddingBottom: Spacing.xxxl },
   row: {
