@@ -92,8 +92,9 @@ export interface MyListingsResponse {
   stats: OwnerStats;
 }
 
-export function fetchMyListings() {
-  return apiGet<MyListingsResponse>(Endpoints.myListings);
+/** `lang` localises the enriched category_name / location_text (web hub.php parity). */
+export function fetchMyListings(lang?: 'kk' | 'ru') {
+  return apiGet<MyListingsResponse>(Endpoints.myListings, lang ? { params: { lang } } : undefined);
 }
 
 /** Creates a blank draft (or with fields) → returns the new uuid. */
@@ -101,8 +102,8 @@ export function createListing(data: ListingFormData = {}) {
   return apiPost<{ uuid: string }>(Endpoints.myListings, data).then((d) => d.uuid);
 }
 
-export function fetchMyListing(uuid: string) {
-  return apiGet<OwnerListingDetail>(Endpoints.myListing(uuid));
+export function fetchMyListing(uuid: string, lang?: 'kk' | 'ru') {
+  return apiGet<OwnerListingDetail>(Endpoints.myListing(uuid), lang ? { params: { lang } } : undefined);
 }
 
 export function updateListing(uuid: string, data: ListingFormData) {

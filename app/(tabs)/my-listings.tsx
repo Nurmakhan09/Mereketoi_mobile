@@ -34,7 +34,7 @@ import { OwnerListing, OwnerListingDetail, OwnerStats } from '@/types';
  * stats row (Көрулер · Таңдаулылар · Брондау — web hub parity), or an empty state.
  */
 export default function MyListingScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const status = useAuthStore((s) => s.status);
   const refreshMine = useMyListingStore((s) => s.refresh);
@@ -50,14 +50,14 @@ export default function MyListingScreen() {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetchMyListings();
+      const res = await fetchMyListings(locale);
       const mine = res.items.find((i) => i.status !== 'deleted') ?? null;
       setListing(mine);
       setStats(res.stats ?? null);
       // Detail fills the "full info" block (contact phone + full description, which the
       // list shape omits). Best-effort — the block degrades gracefully without it.
       if (mine) {
-        fetchMyListing(mine.uuid).then(setDetail).catch(() => setDetail(null));
+        fetchMyListing(mine.uuid, locale).then(setDetail).catch(() => setDetail(null));
       } else {
         setDetail(null);
       }
@@ -66,7 +66,7 @@ export default function MyListingScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   useFocusEffect(
     useCallback(() => {
