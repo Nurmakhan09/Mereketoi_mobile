@@ -63,6 +63,7 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="forgot-password" />
             <Stack.Screen name="listing/[uuid]/index" options={pushedHeader} />
             <Stack.Screen name="listing/[uuid]/calendar" options={pushedHeader} />
             <Stack.Screen name="my/[uuid]/edit" options={pushedHeader} />

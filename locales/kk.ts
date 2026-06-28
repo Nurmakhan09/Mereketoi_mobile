@@ -131,6 +131,18 @@ const kk = {
   passwordTooShort: 'Құпия сөз кемінде 8 таңба болуы керек.',
   passwordMismatch: 'Құпия сөздер сәйкес келмейді.',
   nameRequired: 'Атыңызды енгізіңіз.',
+  // Forgot password (3-step reset)
+  forgotLink: 'Құпия сөзді ұмыттыңыз ба?',
+  forgotTitle: 'Құпия сөзді қалпына келтіру',
+  forgotSubtitle: 'Аккаунтыңызға тіркелген email немесе телефонды енгізіңіз — растау кодын жібереміз.',
+  forgotSendCode: 'Код жіберу',
+  forgotCodeSentEmail: 'Растау коды email-ге жіберілді.',
+  forgotCodeSentSms: 'Растау коды SMS-пен жіберілді.',
+  forgotCodeLabel: 'Растау коды',
+  forgotCodePlaceholder: '6 таңбалы код',
+  forgotVerify: 'Растау',
+  forgotDone: 'Құпия сөз жаңартылды. Жаңа сөзбен кіріңіз.',
+  codeRequired: 'Растау кодын енгізіңіз.',
 
   // Create / edit form
   createTitle: 'Хабарландыру беру',

@@ -194,6 +194,12 @@ export default function AuthScreen() {
           />
         ) : null}
 
+        {mode === 'login' ? (
+          <Pressable onPress={() => router.push('/forgot-password')} hitSlop={6} style={styles.forgotLink}>
+            <Text variant="small" color={Colors.primary}>{t.forgotLink}</Text>
+          </Pressable>
+        ) : null}
+
         <Button
           title={mode === 'login' ? t.loginAction : t.registerAction}
           loading={busy === 'form'}
@@ -242,6 +248,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   segActive: { backgroundColor: Colors.primary },
+  forgotLink: { alignSelf: 'flex-end', marginTop: Spacing.sm },
   submit: { marginTop: Spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.lg },
   line: { flex: 1, height: 1, backgroundColor: Colors.border },

@@ -14,6 +14,9 @@ export const Endpoints = {
   authLogin: '/auth/login',
   authRegister: '/auth/register',
   authOauth: (provider: string) => `/auth/oauth/${provider}`,
+  authForgot: '/auth/forgot-password',
+  authForgotVerify: '/auth/forgot-password/verify',
+  authForgotReset: '/auth/forgot-password/reset',
   // Auth (Bearer)
   authLogout: '/auth/logout',
   me: '/me',

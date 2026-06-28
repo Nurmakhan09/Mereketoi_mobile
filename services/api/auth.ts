@@ -17,6 +17,24 @@ export function fetchMe() {
   return apiGet<{ user: User }>(Endpoints.me).then((d) => d.user);
 }
 
+// ── Forgot password (public, 3-step OTP; anti-enumeration) ────────────────────
+
+/** Step 1: POST /auth/forgot-password — {login} (email OR phone). Sends a reset code;
+ *  returns the channel it went to. Never reveals whether the account exists. */
+export function forgotPassword(login: string) {
+  return apiPost<{ channel: 'email' | 'sms' }>(Endpoints.authForgot, { login });
+}
+
+/** Step 2: POST /auth/forgot-password/verify — {login, code}. Validates the code only. */
+export function verifyReset(login: string, code: string) {
+  return apiPost<unknown>(Endpoints.authForgotVerify, { login, code });
+}
+
+/** Step 3: POST /auth/forgot-password/reset — {login, code, password}. Sets the new password. */
+export function resetPassword(login: string, code: string, password: string) {
+  return apiPost<unknown>(Endpoints.authForgotReset, { login, code, password });
+}
+
 /** POST /auth/logout — revoke the current Bearer token. */
 export function logout() {
   return apiPost<{ loggedOut: boolean }>(Endpoints.authLogout);

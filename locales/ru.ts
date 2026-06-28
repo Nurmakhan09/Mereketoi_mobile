@@ -124,6 +124,18 @@ const ru: Strings = {
   passwordTooShort: 'Пароль должен быть не короче 8 символов.',
   passwordMismatch: 'Пароли не совпадают.',
   nameRequired: 'Введите имя.',
+  // Forgot password (3-step reset)
+  forgotLink: 'Забыли пароль?',
+  forgotTitle: 'Восстановление пароля',
+  forgotSubtitle: 'Введите email или телефон вашего аккаунта — пришлём код подтверждения.',
+  forgotSendCode: 'Отправить код',
+  forgotCodeSentEmail: 'Код подтверждения отправлен на email.',
+  forgotCodeSentSms: 'Код подтверждения отправлен по SMS.',
+  forgotCodeLabel: 'Код подтверждения',
+  forgotCodePlaceholder: '6-значный код',
+  forgotVerify: 'Подтвердить',
+  forgotDone: 'Пароль обновлён. Войдите с новым паролем.',
+  codeRequired: 'Введите код подтверждения.',
 
   createTitle: 'Подать объявление',
   editTitle: 'Редактировать объявление',
