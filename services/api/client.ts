@@ -47,9 +47,17 @@ function toApiError(error: AxiosError<ApiEnvelope<unknown>>): ApiError {
   }
 
   if (status === 0) {
-    return new ApiError('Желі қатесі. Интернет байланысын тексеріңіз.', 0);
+    // No HTTP response reached us. Distinguish a request TIMEOUT (server too slow /
+    // aborted) from a genuine connectivity failure, and carry the axios code so the
+    // real cause is visible — a "save failed" with a live connection is usually a
+    // timeout, NOT "no internet". (The interceptor below also dev-logs method+url+code.)
+    const isTimeout = error.code === 'ECONNABORTED' || /timeout/i.test(error.message ?? '');
+    const message = isTimeout
+      ? 'Сервер жауап бермеді. Қайталап көріңіз.'
+      : 'Желі қатесі. Интернет байланысын тексеріңіз.';
+    return new ApiError(message, 0, undefined, error.code);
   }
-  return new ApiError(error.message || `Сервер қатесі (${status})`, status);
+  return new ApiError(error.message || `Сервер қатесі (${status})`, status, undefined, error.code);
 }
 
 // ── Response: unwrap envelope / map errors ───────────────────────────────────
@@ -57,6 +65,14 @@ http.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiEnvelope<unknown>>) => {
     const status = error.response?.status ?? 0;
+    if (__DEV__) {
+      const cfg = error.config;
+      const url = `${cfg?.baseURL ?? ''}${cfg?.url ?? ''}`;
+      console.warn(
+        `[API] ${cfg?.method?.toUpperCase() ?? '?'} ${url} → status ${status}` +
+          `${error.code ? ` (code ${error.code})` : ''}: ${error.message}`,
+      );
+    }
     if (status === 401 && onUnauthorized) {
       onUnauthorized();
     }
