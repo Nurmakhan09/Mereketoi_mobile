@@ -227,6 +227,7 @@ const ru: Strings = {
   listingRenewed: 'Срок объявления продлён',
   packagesTitle: 'Пакеты',
   packagesEmpty: 'Пока нет пакетов.',
+  packagesUnavailable: 'Пакеты временно недоступны. Попробуйте позже.',
   packagesPay: 'Оплатить',
   packagesIosWeb: 'Пакеты и оплата доступны на сайте: mereketoi.kz',
   openWeb: 'Открыть на сайте',

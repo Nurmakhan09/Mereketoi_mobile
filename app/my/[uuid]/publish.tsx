@@ -44,7 +44,7 @@ export default function PublishPaymentScreen() {
 
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [errorKind, setErrorKind] = useState<'none' | 'network' | 'packages'>('none');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -54,13 +54,15 @@ export default function PublishPaymentScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(false);
+    setErrorKind('none');
     try {
       const all = await fetchPackages(locale);
       // Only packages that publish a listing (web showPublish filters the same way).
       setPackages(all.filter((p) => p.package_type === 'listing_publish'));
-    } catch {
-      setError(true);
+    } catch (e: any) {
+      // Distinguish a real network failure (status 0) from a server/HTTP error (e.g. a
+      // 404 on the billing endpoint) — don't mislabel "packages unavailable" as "no internet".
+      setErrorKind(e?.status === 0 ? 'network' : 'packages');
     } finally {
       setLoading(false);
     }
@@ -112,7 +114,15 @@ export default function PublishPaymentScreen() {
     );
   }
   if (loading) return <Loading />;
-  if (error) return <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />;
+  if (errorKind !== 'none') {
+    return (
+      <ErrorState
+        message={errorKind === 'network' ? t.errorNetwork : t.packagesUnavailable}
+        retryLabel={t.retry}
+        onRetry={load}
+      />
+    );
+  }
 
   return (
     <Screen scroll padded>

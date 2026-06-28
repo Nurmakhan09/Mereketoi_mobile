@@ -32,17 +32,18 @@ export function PackagesSheet({ visible, onClose, listingUuid, onPaid }: Props) 
   const { t, locale } = useI18n();
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [errorKind, setErrorKind] = useState<'none' | 'network' | 'packages'>('none');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(false);
+    setErrorKind('none');
     try {
       setPackages(await fetchPackages(locale));
-    } catch {
-      setError(true);
+    } catch (e: any) {
+      // Network (status 0) vs server/HTTP error (e.g. a 404 on billing) — show the right message.
+      setErrorKind(e?.status === 0 ? 'network' : 'packages');
     } finally {
       setLoading(false);
     }
@@ -92,8 +93,12 @@ export function PackagesSheet({ visible, onClose, listingUuid, onPaid }: Props) 
         </View>
       ) : loading ? (
         <Loading />
-      ) : error ? (
-        <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={load} />
+      ) : errorKind !== 'none' ? (
+        <ErrorState
+          message={errorKind === 'network' ? t.errorNetwork : t.packagesUnavailable}
+          retryLabel={t.retry}
+          onRetry={load}
+        />
       ) : packages.length === 0 ? (
         <EmptyState icon="pricetags-outline" title={t.packagesEmpty} />
       ) : (

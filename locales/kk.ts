@@ -236,6 +236,7 @@ const kk = {
   listingRenewed: 'Хабарландыру мерзімі ұзартылды',
   packagesTitle: 'Пакеттер',
   packagesEmpty: 'Әзірге пакет жоқ.',
+  packagesUnavailable: 'Пакеттер уақытша қолжетімсіз. Кейінірек қайталаңыз.',
   packagesPay: 'Төлеу',
   packagesIosWeb: 'Пакеттер мен төлем сайтта қолжетімді: mereketoi.kz',
   openWeb: 'Сайтта ашу',
