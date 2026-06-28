@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/Text';
-import { Logo } from '@/components/Logo';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -51,29 +50,23 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.lg }]}>
-      {/* Top bar — notifications (left, unread badge) · logo · history (right). Icons authed-only. */}
-      <View style={styles.topBar}>
-        {isAuthed ? (
-          <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.topIcon}>
-            <Ionicons name="notifications-outline" size={24} color={Colors.primary} />
+      {/* Top bar (authed) — web .acc-top parity: NO logo; bordered round corner buttons,
+          notification bell (LEFT, red unread badge) · history (RIGHT). */}
+      {isAuthed ? (
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.push('/notifications')} hitSlop={6} style={styles.corner}>
+            <Ionicons name="notifications-outline" size={22} color={Colors.text} />
             {unread > 0 ? (
-              <View style={styles.bellBadge}>
-                <Text variant="xsmall" color={Colors.white} style={styles.bellBadgeTxt}>{unread > 9 ? '9+' : unread}</Text>
+              <View style={styles.cornerBadge}>
+                <Text variant="xsmall" color={Colors.white} style={styles.cornerBadgeTxt}>{unread > 9 ? '9+' : unread}</Text>
               </View>
             ) : null}
           </Pressable>
-        ) : (
-          <View style={styles.topIcon} />
-        )}
-        <Logo size="sm" />
-        {isAuthed ? (
-          <Pressable onPress={() => router.push('/toi/history')} hitSlop={8} style={styles.topIcon}>
-            <Ionicons name="time-outline" size={24} color={Colors.primary} />
+          <Pressable onPress={() => router.push('/toi/history')} hitSlop={6} style={styles.corner}>
+            <Ionicons name="time-outline" size={22} color={Colors.text} />
           </Pressable>
-        ) : (
-          <View style={styles.topIcon} />
-        )}
-      </View>
+        </View>
+      ) : null}
       {/* Header */}
       {isAuthed && user ? (
         <View style={styles.userHead}>
@@ -169,7 +162,7 @@ function MenuItem({
       </Text>
       {badge && badge > 0 ? (
         <View style={styles.itemBadge}>
-          <Text variant="xsmall" color={Colors.white} style={styles.bellBadgeTxt}>{badge > 9 ? '9+' : badge}</Text>
+          <Text variant="xsmall" color={Colors.white} style={styles.cornerBadgeTxt}>{badge > 9 ? '9+' : badge}</Text>
         </View>
       ) : null}
       <Ionicons name="chevron-forward" size={18} color={Colors.textFaint} />
@@ -211,16 +204,20 @@ function LangSwitch() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.lg },
-  topIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  bellBadge: {
-    position: 'absolute', top: 2, right: 2, minWidth: 16, height: 16, paddingHorizontal: 3,
-    borderRadius: 8, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.base },
+  corner: {
+    width: 42, height: 42, borderRadius: Radius.pill, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  bellBadgeTxt: { fontWeight: '800', fontSize: 10, lineHeight: 13 },
+  cornerBadge: {
+    position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, paddingHorizontal: 5,
+    borderRadius: 9, backgroundColor: '#dc2626', borderWidth: 2, borderColor: Colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cornerBadgeTxt: { fontWeight: '800', fontSize: 10, lineHeight: 13 },
   itemBadge: {
     minWidth: 18, height: 18, paddingHorizontal: 4, marginRight: Spacing.sm,
-    borderRadius: 9, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 9, backgroundColor: '#dc2626', alignItems: 'center', justifyContent: 'center',
   },
   userHead: { alignItems: 'center', marginBottom: Spacing.xl },
   avatar: {
