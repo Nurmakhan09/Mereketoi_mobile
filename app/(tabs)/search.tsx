@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, ReactNode, ComponentProps } from 'react';
 import { View, StyleSheet, FlatList, TextInput, ActivityIndicator, ScrollView, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { Logo } from '@/components/Logo';
 import { Pill } from '@/components/ui/Pill';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
+import { DatePickerSheet } from '@/components/ui/DatePickerSheet';
+import { CityPickerSheet } from '@/components/ui/CityPickerSheet';
 import { Text } from '@/components/ui/Text';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -24,17 +26,6 @@ const PRICE_TYPES: PriceType[] = ['fixed', 'negotiable', 'not_specified'];
 const MONTHS_ABBR_KK = ['қаң', 'ақп', 'нау', 'сәу', 'мам', 'мау', 'шіл', 'там', 'қыр', 'қаз', 'қар', 'жел'];
 const MONTHS_ABBR_RU = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
-/** Build the next `n` selectable dates (YYYY-MM-DD) starting today. */
-function upcomingDates(n: number): string[] {
-  const out: string[] = [];
-  const base = new Date();
-  for (let i = 0; i < n; i++) {
-    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-  }
-  return out;
-}
-
 /** A labeled horizontal pill row (module-scope → stable identity, keeps scroll position). */
 function PillRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -44,6 +35,36 @@ function PillRow({ label, children }: { label: string; children: ReactNode }) {
         {children}
       </ScrollView>
     </View>
+  );
+}
+
+/** Full-width filter selector (icon + value/placeholder) that opens a picker sheet;
+ *  shows a clear (✕) when a value is set, otherwise a chevron. */
+function SelectorButton({
+  icon,
+  placeholder,
+  value,
+  onPress,
+  onClear,
+}: {
+  icon: ComponentProps<typeof Ionicons>['name'];
+  placeholder: string;
+  value?: string;
+  onPress: () => void;
+  onClear?: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.selector}>
+      <Ionicons name={icon} size={18} color={Colors.textMuted} />
+      <Text variant="small" color={value ? Colors.textBody : Colors.textFaint} style={styles.selectorTxt} numberOfLines={1}>
+        {value ?? placeholder}
+      </Text>
+      {onClear ? (
+        <Ionicons name="close-circle" size={18} color={Colors.textFaint} onPress={onClear} />
+      ) : (
+        <Ionicons name="chevron-down" size={18} color={Colors.textMuted} />
+      )}
+    </Pressable>
   );
 }
 
@@ -66,6 +87,8 @@ export default function SearchScreen() {
   const [priceMax, setPriceMax] = useState('');
   const [date, setDate] = useState<string | undefined>(undefined);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
 
   const [items, setItems] = useState<ListingCardType[]>([]);
   const [page, setPage] = useState(1);
@@ -102,7 +125,9 @@ export default function SearchScreen() {
     const [, m, day] = d.split('-');
     return `${parseInt(day, 10)} ${months[parseInt(m, 10) - 1]}`;
   };
-  const dates = useMemo(() => upcomingDates(45), []);
+  // Pre-localized city list for the searchable picker + the selected city's display name.
+  const cityItems = useMemo(() => cities.map((c) => ({ slug: c.slug, name: localized(c, 'name', locale) })), [cities, locale]);
+  const cityName = city ? cityItems.find((c) => c.slug === city)?.name ?? city : undefined;
 
   // Count of applied filters (excludes the free-text query + default sort) → button badge.
   const activeCount =
@@ -201,16 +226,17 @@ export default function SearchScreen() {
   const filterSheet = (
     <Sheet visible={filterOpen} onClose={() => setFilterOpen(false)} title={t.filters}>
       <ScrollView style={styles.fSheet} keyboardShouldPersistTaps="handled">
-        {/* Date (availability) */}
+        {/* Date (availability) — opens a month-grid picker (minDate = today). */}
         <View style={styles.fRow}>
           <Text variant="small" color={Colors.textMuted} style={styles.fLabel}>{t.filterDate}</Text>
           <Text variant="xsmall" color={Colors.textFaint} style={styles.fHint}>{t.filterDateHint}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fScroll}>
-            <Pill label={t.anyDate} selected={!date} onPress={() => setDate(undefined)} />
-            {dates.map((d) => (
-              <Pill key={d} label={dateLabel(d)} selected={date === d} onPress={() => setDate(d)} />
-            ))}
-          </ScrollView>
+          <SelectorButton
+            icon="calendar-outline"
+            placeholder={t.pickDate}
+            value={date ? dateLabel(date) : undefined}
+            onPress={() => setDateOpen(true)}
+            onClear={date ? () => setDate(undefined) : undefined}
+          />
         </View>
 
         {/* Category */}
@@ -221,13 +247,17 @@ export default function SearchScreen() {
           ))}
         </PillRow>
 
-        {/* City */}
-        <PillRow label={t.city}>
-          <Pill label={t.allCities} selected={!city} onPress={() => setCity(undefined)} />
-          {cities.map((c) => (
-            <Pill key={c.slug} label={localized(c, 'name', locale)} selected={city === c.slug} onPress={() => setCity(c.slug)} />
-          ))}
-        </PillRow>
+        {/* City — opens a searchable list. */}
+        <View style={styles.fRow}>
+          <Text variant="small" color={Colors.textMuted} style={styles.fLabel}>{t.city}</Text>
+          <SelectorButton
+            icon="location-outline"
+            placeholder={t.pickCity}
+            value={cityName}
+            onPress={() => setCityOpen(true)}
+            onClear={city ? () => setCity(undefined) : undefined}
+          />
+        </View>
 
         {/* Price type */}
         <PillRow label={t.priceType}>
@@ -318,6 +348,19 @@ export default function SearchScreen() {
         }
       />
       {filterSheet}
+      <CityPickerSheet
+        visible={cityOpen}
+        onClose={() => setCityOpen(false)}
+        items={cityItems}
+        value={city}
+        onSelect={setCity}
+      />
+      <DatePickerSheet
+        visible={dateOpen}
+        onClose={() => setDateOpen(false)}
+        value={date}
+        onSelect={setDate}
+      />
     </View>
   );
 }
@@ -368,6 +411,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, color: Colors.textBody, fontSize: 15,
   },
   fActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+  selector: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md,
+    paddingHorizontal: Spacing.base, height: 46, backgroundColor: Colors.surface,
+  },
+  selectorTxt: { flex: 1 },
   flex1: { flex: 1 },
   footer: { paddingVertical: Spacing.base },
 });

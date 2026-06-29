@@ -70,6 +70,9 @@ const ru: Strings = {
   priceTo: 'до',
   applyFilters: 'Применить',
   filterDateHint: 'Свободные на выбранную дату',
+  pickDate: 'Выбрать дату',
+  pickCity: 'Выбрать регион',
+  searchCity: 'Поиск региона…',
   // Help center
   helpGuideTitle: 'Пошаговое руководство',
   helpFaqTitle: 'Частые вопросы',

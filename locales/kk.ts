@@ -74,6 +74,9 @@ const kk = {
   priceTo: 'дейін',
   applyFilters: 'Қолдану',
   filterDateHint: 'Таңдалған күні бос хабарландырулар',
+  pickDate: 'Нақты күн таңдау',
+  pickCity: 'Өңір таңдау',
+  searchCity: 'Өңірді іздеу…',
   // Help center
   helpGuideTitle: 'Қадамдық нұсқаулық',
   helpFaqTitle: 'Жиі қойылатын сұрақтар',
