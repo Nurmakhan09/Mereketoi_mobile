@@ -11,7 +11,9 @@ import { useI18n } from '@/locales';
 import { fetchPreferences, updatePreferences } from '@/services/api/notifications';
 import { NotificationChannel } from '@/types';
 
-const CHANNELS: NotificationChannel[] = ['in_app', 'email', 'telegram', 'push'];
+// Telegram is intentionally not offered (owner decision 2026-06-29). The backend still
+// models it, but the app only surfaces the live channels: in-app (forced) + email + push.
+const CHANNELS: NotificationChannel[] = ['in_app', 'email', 'push'];
 
 export default function NotificationPreferencesScreen() {
   const { t } = useI18n();
@@ -79,10 +81,6 @@ export default function NotificationPreferencesScreen() {
               {ch === 'in_app' ? (
                 <Text variant="xsmall" color={Colors.textMuted}>
                   {t.channelInAppNote}
-                </Text>
-              ) : ch !== 'email' ? (
-                <Text variant="xsmall" color={Colors.textFaint}>
-                  {t.channelComingSoon}
                 </Text>
               ) : null}
             </View>
