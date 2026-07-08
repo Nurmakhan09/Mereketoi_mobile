@@ -73,7 +73,7 @@ export default function ToiScreen() {
 
   useEffect(() => {
     if (isAuthed) void load();
-    else requireAuth(() => {});
+    else requireAuth(() => {}, '/toi');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 

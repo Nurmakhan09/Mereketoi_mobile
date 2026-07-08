@@ -80,6 +80,7 @@ export default function RootLayout() {
             <Stack.Screen name="notifications" options={pushedHeader} />
             <Stack.Screen name="notifications-preferences" options={pushedHeader} />
             <Stack.Screen name="page/[slug]" options={pushedHeader} />
+            <Stack.Screen name="contact" options={pushedHeader} />
           </Stack>
           <StatusBar style="dark" />
         </AppGate>

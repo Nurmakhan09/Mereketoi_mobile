@@ -68,6 +68,15 @@ export interface AppConfig {
   }>;
   support_email?: string;
   web_url?: string;
+  contact?: {
+    phone?: string;
+    whatsapp?: string;
+    email?: string;
+    instagram?: string;
+    telegram?: string;
+    address_kk?: string;
+    address_ru?: string;
+  };
   payment?: {
     provider?: string;
     provider_mode?: string;

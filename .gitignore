@@ -45,3 +45,9 @@ app-example
 /android
 
 expo-qr.png
+
+# Production upload keystore + signing creds — NEVER commit
+keystore.properties
+android/keystore.properties
+android/app/mereketoi-upload.jks
+*.jks

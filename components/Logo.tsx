@@ -1,13 +1,18 @@
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, Image } from 'react-native';
 import { Text } from './ui/Text';
 import { Colors, Typography } from '@/constants/theme';
 
+// New brand mark — the blue "M-in-circle" monogram. Blue variant for light
+// surfaces, white variant for the navy hero (`light`). Relative requires so the
+// asset resolves regardless of the path alias.
+const MARK = require('../assets/images/logo.png');
+const MARK_WHITE = require('../assets/images/logo-white.png');
+
 /**
- * Brand wordmark — the whole "mereketoi" is navy (design prompt §2.1/§3/§7:
- * "логотип mereketoi түгел көк"; gold is accent-only). `light` renders the whole
- * wordmark white for use over the navy hero.
- * NOTE: the web logo still renders "toi" in gold — align the web if full parity
- * is wanted.
+ * Brand logo — the new blue monogram + the "mereketoi" wordmark.
+ * `lg` stacks the mark above the wordmark (auth/hero screens); `md`/`sm` lay them
+ * out side-by-side (headers). `light` renders the white mark + white wordmark for
+ * use over the navy hero.
  */
 export function Logo({
   size = 'md',
@@ -19,18 +24,27 @@ export function Logo({
   style?: ViewStyle;
 }) {
   const fontSize = size === 'lg' ? 28 : size === 'sm' ? 18 : 22;
-  // Whole wordmark navy (or white over the navy hero) — gold is accent-only.
+  const markSize = size === 'lg' ? 72 : size === 'sm' ? 24 : 34;
+  const stacked = size === 'lg';
   const base = light ? Colors.white : Colors.text;
-  const accent = base;
   return (
-    <View style={[styles.row, style]}>
-      <Text style={[styles.word, { fontSize, color: base }]}>mereke</Text>
-      <Text style={[styles.word, { fontSize, color: accent }]}>toi</Text>
+    <View style={[stacked ? styles.col : styles.row, style]}>
+      <Image
+        source={light ? MARK_WHITE : MARK}
+        style={{ width: markSize, height: markSize }}
+        resizeMode="contain"
+      />
+      <View style={styles.wordRow}>
+        <Text style={[styles.word, { fontSize, color: base }]}>mereke</Text>
+        <Text style={[styles.word, { fontSize, color: base }]}>toi</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'baseline' },
+  col: { alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  wordRow: { flexDirection: 'row', alignItems: 'baseline' },
   word: { fontFamily: Typography.h2.fontFamily, letterSpacing: -0.3 },
 });

@@ -7,9 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Logo } from '@/components/Logo';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
+import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { Locale } from '@/stores/localeStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { fetchUnreadCount } from '@/services/api/notifications';
@@ -21,6 +23,7 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const clearFav = useFavoritesStore((s) => s.clear);
+  const { requireAuth } = useRequireAuth();
   const isAuthed = status === 'authed';
 
   // Unread notifications → red badge on the header bell + the Хабарламалар row.
@@ -50,7 +53,11 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.lg }]}>
-      {/* Top bar (authed) — web .acc-top parity: NO logo; bordered round corner buttons,
+      {/* Brand logo header */}
+      <View style={styles.brandTop}>
+        <Logo size="md" />
+      </View>
+      {/* Top bar (authed) — bordered round corner buttons,
           notification bell (LEFT, red unread badge) · history (RIGHT). */}
       {isAuthed ? (
         <View style={styles.topBar}>
@@ -96,11 +103,16 @@ export default function ProfileScreen() {
         </View>
       )}
 
+      {/* Той ұйымдастыру — visible to everyone (incl. guests). Guests are asked to
+          log in first, then land on the той planner (returnTo='/toi'). */}
+      <Card style={styles.menu} padded={false}>
+        <MenuItem icon="sparkles-outline" label={t.menuToi} onPress={() => requireAuth(() => router.push('/toi'), '/toi')} last />
+      </Card>
+
       {/* Account menu (authed) */}
       {isAuthed ? (
         <Card style={styles.menu} padded={false}>
           <MenuItem icon="albums-outline" label={t.menuMyListings} onPress={() => router.push('/my-listings')} />
-          <MenuItem icon="sparkles-outline" label={t.menuToi} onPress={() => router.push('/toi')} />
           <MenuItem icon="calendar-outline" label={t.calendarTitle} onPress={() => router.push('/calendar')} />
           <MenuItem icon="time-outline" label={t.historyTitle} onPress={() => router.push('/toi/history')} last />
         </Card>
@@ -111,7 +123,8 @@ export default function ProfileScreen() {
         <Card style={styles.menu} padded={false}>
           <MenuItem icon="heart-outline" label={t.tabFavorites} onPress={() => router.push('/favorites')} />
           <MenuItem icon="notifications-outline" label={t.notificationsTitle} badge={unread} onPress={() => router.push('/notifications')} />
-          <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} last />
+          <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} />
+          <MenuItem icon="lock-closed-outline" label={t.forgotLink} onPress={() => router.push('/forgot-password')} last />
         </Card>
       ) : null}
 
@@ -122,6 +135,7 @@ export default function ProfileScreen() {
       <Card style={styles.menu} padded={false}>
         <MenuItem icon="information-circle-outline" label={t.menuAbout} onPress={() => router.push('/page/about')} />
         <MenuItem icon="help-circle-outline" label={t.menuHelp} onPress={() => router.push('/page/help')} />
+        <MenuItem icon="call-outline" label={t.menuContact} onPress={() => router.push('/contact')} />
         <MenuItem icon="document-text-outline" label={t.menuTerms} onPress={() => router.push('/page/terms')} />
         <MenuItem icon="shield-checkmark-outline" label={t.menuPrivacy} onPress={() => router.push('/page/privacy')} last />
       </Card>
@@ -204,6 +218,7 @@ function LangSwitch() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
+  brandTop: { alignItems: 'center', marginBottom: Spacing.base },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.base },
   corner: {
     width: 42, height: 42, borderRadius: Radius.pill, borderWidth: 1, borderColor: Colors.border,

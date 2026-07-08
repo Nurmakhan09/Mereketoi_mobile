@@ -17,7 +17,7 @@ type Step = 1 | 2 | 3;
 
 /**
  * Forgot-password — 3-step OTP reset on one screen (web AuthController parity):
- *   1) email/phone → send a code   2) enter the 6-digit code   3) set a new password.
+ *   1) email → send a code   2) enter the 6-digit code   3) set a new password.
  * The backend never reveals whether the account exists (anti-enumeration). On success
  * we return to /auth with a "password updated" message.
  */
@@ -44,7 +44,10 @@ export default function ForgotPasswordScreen() {
 
   const onSendCode = async () => {
     setErrors({});
-    if (!login.trim()) { setErrors({ login: t.loginRequired }); return; }
+    const id = login.trim();
+    if (!id) { setErrors({ login: t.loginRequired }); return; }
+    // Email-only for now (phone reset will be added later).
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id)) { setErrors({ login: t.loginInvalid }); return; }
     setBusy(true);
     try {
       const res = await forgotPassword(login.trim());

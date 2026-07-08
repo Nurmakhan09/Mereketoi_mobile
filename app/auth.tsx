@@ -53,11 +53,10 @@ export default function AuthScreen() {
     if (!id) {
       e.login = t.loginRequired;
     } else {
-      // Accept an email OR a KZ phone (≥10 digits). On register we require a valid
-      // shape so we never send garbage to the server.
+      // Email-only registration for now (phone sign-up will be added later). On
+      // register we require a valid email so we never send garbage to the server.
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id);
-      const isPhone = id.replace(/\D/g, '').length >= 10;
-      if (mode === 'register' && !isEmail && !isPhone) e.login = t.loginInvalid;
+      if (mode === 'register' && !isEmail) e.login = t.loginInvalid;
     }
     if (!password) e.password = t.passwordRequired;
     else if (mode === 'register' && password.length < 8) e.password = t.passwordTooShort;
