@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1086985842028",
+    "project_id": "mereketoi-9aab3",
+    "storage_bucket": "mereketoi-9aab3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1086985842028:android:ec5d8c375f0e6741841749",
+        "android_client_info": {
+          "package_name": "kz.mereketoi.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_lcEfa9u3HPmDdnZVHqkp92p71uc85k8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
