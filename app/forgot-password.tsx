@@ -18,8 +18,8 @@ type Step = 1 | 2 | 3;
 /**
  * Forgot-password — 3-step OTP reset on one screen (web AuthController parity):
  *   1) email → send a code   2) enter the 6-digit code   3) set a new password.
- * The backend never reveals whether the account exists (anti-enumeration). On success
- * we return to /auth with a "password updated" message.
+ * An unknown email is reported inline ("Мұндай email тіркелмеген") — owner UX decision.
+ * On success we return to /auth with a "password updated" message.
  */
 export default function ForgotPasswordScreen() {
   const { t } = useI18n();

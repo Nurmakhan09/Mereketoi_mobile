@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, Pressable } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 
 import { Screen } from '@/components/ui/Screen';
@@ -153,7 +153,13 @@ export default function SettingsScreen() {
             </View>
           </>
         ) : (
-          <Button title={t.changePassword} variant="outline" icon="lock-closed-outline" onPress={() => setEditingPw(true)} />
+          <>
+            <Button title={t.changePassword} variant="outline" icon="lock-closed-outline" onPress={() => setEditingPw(true)} />
+            {/* Forgot the current password? Reset it by email (owner request: keep it in Settings). */}
+            <Pressable onPress={() => router.push('/forgot-password')} hitSlop={6} style={styles.forgotLink}>
+              <Text variant="small" color={Colors.primary}>{t.forgotLink}</Text>
+            </Pressable>
+          </>
         )}
       </Card>
 
@@ -192,6 +198,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   section: { marginTop: Spacing.lg, marginBottom: Spacing.md },
+  forgotLink: { alignSelf: 'center', marginTop: Spacing.md, paddingVertical: 4 },
   dangerHint: { marginBottom: Spacing.md },
   row: { marginBottom: Spacing.md },
   btn: { marginTop: Spacing.sm },

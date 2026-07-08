@@ -130,6 +130,25 @@ export default function SearchScreen() {
   const cityItems = useMemo(() => cities.map((c) => ({ slug: c.slug, name: localized(c, 'name', locale) })), [cities, locale]);
   const cityName = city ? cityItems.find((c) => c.slug === city)?.name ?? city : undefined;
 
+  // Category shortcuts: while typing, suggest matching categories AND subcategories
+  // (e.g. "тойхана" → Тойхана, "әнші" → Әнші). Tapping one filters by that category.
+  const allCategories = useMemo(
+    () => categories.flatMap((c) => [c, ...(c.children ?? [])]),
+    [categories],
+  );
+  const catSuggestions = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    if (!query) return [];
+    return allCategories
+      .filter((c) => c.name_kk.toLowerCase().includes(query) || c.name_ru.toLowerCase().includes(query))
+      .slice(0, 8);
+  }, [allCategories, q]);
+
+  const onPickCategory = (slug: string) => {
+    setQ('');
+    setCategory(slug);
+  };
+
   // Count of applied filters (excludes the free-text query + default sort) → button badge.
   const activeCount =
     (category ? 1 : 0) + (city ? 1 : 0) + (priceType ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (date ? 1 : 0) + (sort !== 'newest' ? 1 : 0);
@@ -224,6 +243,24 @@ export default function SearchScreen() {
           ) : null}
         </Pressable>
       </View>
+      {catSuggestions.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.suggest}
+          contentContainerStyle={styles.suggestScroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          {catSuggestions.map((c) => (
+            <Pressable key={c.slug} style={styles.catChip} onPress={() => onPickCategory(c.slug)}>
+              <Ionicons name="grid-outline" size={14} color={Colors.primary} />
+              <Text variant="small" color={Colors.primary} style={styles.catChipTxt} numberOfLines={1}>
+                {localized(c, 'name', locale)}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
     </View>
   );
 
@@ -403,6 +440,15 @@ const styles = StyleSheet.create({
     borderRadius: 9, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center',
   },
   filterBadgeTxt: { fontWeight: '800', fontSize: 11, lineHeight: 14 },
+  // Category suggestion chips (appear while typing)
+  suggest: { marginTop: Spacing.sm, flexGrow: 0 },
+  suggestScroll: { gap: Spacing.sm, paddingRight: Spacing.base, alignItems: 'center' },
+  catChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: Colors.primarySoft, borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md, paddingVertical: 7,
+  },
+  catChipTxt: { fontWeight: '600' },
   // Filter sheet
   fSheet: { maxHeight: 460 },
   fRow: { marginBottom: Spacing.base },
