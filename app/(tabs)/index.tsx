@@ -14,6 +14,7 @@ import { useTaxonomy } from '@/features/listings/useTaxonomy';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
+import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 import { ListingCard as ListingCardType, Category } from '@/types';
 
 /** Home / Discovery — hero search, parent-category strip, recommended grid. */
@@ -45,6 +46,9 @@ export default function HomeScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Tapping the Home tab icon pulls fresh listings from the network.
+  useReloadOnTabPress(load);
 
   const goSearch = (params?: Record<string, string>) =>
     router.push({ pathname: '/search', params });

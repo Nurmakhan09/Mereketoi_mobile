@@ -15,6 +15,7 @@ import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { Locale } from '@/stores/localeStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { fetchUnreadCount } from '@/services/api/notifications';
+import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 
 export default function ProfileScreen() {
   const { t } = useI18n();
@@ -35,6 +36,11 @@ export default function ProfileScreen() {
       else setUnread(0);
     }, [isAuthed]),
   );
+
+  // Tapping the Profile tab icon refreshes the unread count from the network.
+  useReloadOnTabPress(() => {
+    if (isAuthed) fetchUnreadCount().then(setUnread).catch(() => {});
+  });
 
   const onLogout = () => {
     Alert.alert('', t.confirmLogout, [

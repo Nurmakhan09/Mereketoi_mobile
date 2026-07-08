@@ -19,6 +19,7 @@ import { useTaxonomy } from '@/features/listings/useTaxonomy';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
+import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 import { ListingCard as ListingCardType, SortOption, PriceType } from '@/types';
 
 const SORTS: SortOption[] = ['newest', 'oldest', 'price_asc', 'price_desc'];
@@ -180,6 +181,9 @@ export default function SearchScreen() {
     const handle = setTimeout(() => void load(1), q ? 350 : 0);
     return () => clearTimeout(handle);
   }, [load, q]);
+
+  // Tapping the Search tab icon re-runs the search (page 1) from the network.
+  useReloadOnTabPress(() => void load(1));
 
   const onFavorite = (uuid: string) =>
     requireAuth(() => {

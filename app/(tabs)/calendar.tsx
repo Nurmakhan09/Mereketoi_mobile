@@ -14,6 +14,7 @@ import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { fetchOwnerCalendar } from '@/services/api/listings';
+import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 import { OwnerCalendar, DayStatus } from '@/types';
 
 const MONTHS_KK = ['Қаңтар', 'Ақпан', 'Наурыз', 'Сәуір', 'Мамыр', 'Маусым', 'Шілде', 'Тамыз', 'Қыркүйек', 'Қазан', 'Қараша', 'Желтоқсан'];
@@ -126,6 +127,9 @@ export default function CalendarTab() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [storeUuid]),
   );
+
+  // Tapping the Calendar tab icon reloads it from the network.
+  useReloadOnTabPress(load);
 
   if (status !== 'authed') return <GuestGate returnTo="/calendar" />;
 
