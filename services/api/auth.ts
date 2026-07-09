@@ -17,6 +17,12 @@ export function fetchMe() {
   return apiGet<{ user: User }>(Endpoints.me).then((d) => d.user);
 }
 
+/** POST /auth/oauth/{provider} — exchange a provider id-token for OUR token.
+ *  Used by native Sign in with Apple; the server verifies the token itself. */
+export function oauthSignIn(provider: 'apple' | 'google', idToken: string) {
+  return apiPost<AuthResult>(Endpoints.authOauth(provider), { id_token: idToken });
+}
+
 // ── Forgot password (public, 3-step OTP; anti-enumeration) ────────────────────
 
 /** Step 1: POST /auth/forgot-password — {login} (email OR phone). Sends a reset code;

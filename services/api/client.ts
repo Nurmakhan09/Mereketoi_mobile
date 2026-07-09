@@ -13,6 +13,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { API_BASE_URL, REQUEST_TIMEOUT } from '@/constants/config';
 import { ApiError, ApiEnvelope } from '@/types/api';
 import { getItem, StorageKeys } from '@/services/storage';
+import { useLocaleStore } from '@/stores/localeStore';
 
 export const http = axios.create({
   baseURL: API_BASE_URL,
@@ -26,11 +27,14 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   onUnauthorized = fn;
 }
 
-// ── Request: attach Bearer token ─────────────────────────────────────────────
+// ── Request: attach Bearer token + the language the API must answer in ───────
 http.interceptors.request.use(async (config) => {
   const token = await getItem(StorageKeys.token);
+  config.headers = config.headers ?? {};
+  // Without this the backend has no locale prefix to read and always falls back
+  // to Kazakh — a Russian UI would show Kazakh error messages.
+  config.headers['Accept-Language'] = useLocaleStore.getState().locale;
   if (token) {
-    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

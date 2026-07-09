@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -11,7 +12,7 @@ import { FormField } from '@/components/ui/FormField';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
-import { login as apiLogin, register as apiRegister, fetchMe } from '@/services/api/auth';
+import { login as apiLogin, register as apiRegister, fetchMe, oauthSignIn } from '@/services/api/auth';
 import { runBrowserAuth } from '@/features/auth/browserAuth';
 import { setItem, StorageKeys } from '@/services/storage';
 import { ApiError } from '@/types/api';
@@ -30,7 +31,17 @@ export default function AuthScreen() {
   const [name, setName] = useState('');
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState<'form' | 'google' | null>(null);
+  const [busy, setBusy] = useState<'form' | 'google' | 'apple' | null>(null);
+
+  // Sign in with Apple exists on iOS 13+ only. App Store guideline 4.8 requires it
+  // wherever we offer a third-party login (we offer Google), so it must be shown.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false));
+  }, []);
 
   // After a SUCCESSFUL auth → go to the intended destination.
   const afterAuth = () => {
@@ -116,6 +127,38 @@ export default function AuthScreen() {
       afterAuth();
     } catch {
       Alert.alert(t.error, t.authFailed);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onApple = async () => {
+    setBusy('apple');
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        Alert.alert(t.error, t.authFailed);
+        return;
+      }
+      // The server verifies the token against Apple's keys and issues OUR token.
+      const res = await oauthSignIn('apple', credential.identityToken);
+      await setItem(StorageKeys.token, res.token);
+      await setSession(res.token, res.user);
+      // Apple never puts a name in the id-token, so a fresh account has none yet.
+      if (!res.user.name?.trim()) {
+        router.replace({ pathname: '/set-nickname', params: returnTo ? { returnTo } : {} });
+        return;
+      }
+      afterAuth();
+    } catch (e) {
+      // Dismissing the Apple sheet is a cancel, not a failure.
+      if ((e as { code?: string })?.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert(t.error, e instanceof ApiError ? e.message : t.authFailed);
     } finally {
       setBusy(null);
     }
@@ -216,6 +259,17 @@ export default function AuthScreen() {
         <View style={styles.line} />
       </View>
 
+      {/* Apple requires its own button styling for Sign in with Apple (HIG). */}
+      {appleAvailable ? (
+        <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          cornerRadius={Radius.md}
+          style={styles.appleButton}
+          onPress={busy === null ? onApple : () => {}}
+        />
+      ) : null}
+
       <Button
         title={t.signInGoogle}
         variant="outline"
@@ -223,12 +277,15 @@ export default function AuthScreen() {
         loading={busy === 'google'}
         disabled={busy !== null}
         onPress={onGoogle}
+        style={appleAvailable ? styles.googleButton : undefined}
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  appleButton: { height: 52, width: '100%' },
+  googleButton: { marginTop: Spacing.sm },
   closeRow: { alignItems: 'flex-end' },
   close: { padding: Spacing.xs },
   hero: { alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xl },

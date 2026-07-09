@@ -11,14 +11,16 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",
-      "buildNumber": "1",
+      "buildNumber": "5",
+      "usesAppleSignIn": true,
+      "associatedDomains": ["applinks:mereketoi.kz"],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "kz.mereketoi.app",
+      "package": "mereketoi.kz",
       "googleServicesFile": "./google-services.json",
       "versionCode": 2,
       "adaptiveIcon": {
@@ -51,6 +53,7 @@
           }
         }
       ],
+      "expo-apple-authentication",
       "expo-secure-store",
       "expo-localization",
       "expo-web-browser",

@@ -117,6 +117,7 @@ const ru: Strings = {
   registerAction: 'Зарегистрироваться',
   orContinue: 'или',
   signInGoogle: 'Войти через Google',
+  signInApple: 'Войти через Apple',
   authOpening: 'Открываем браузер…',
   authCancelled: 'Вход отменён.',
   authFailed: 'Не удалось войти. Попробуйте ещё раз.',

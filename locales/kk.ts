@@ -124,6 +124,7 @@ const kk = {
   registerAction: 'Тіркелу',
   orContinue: 'немесе',
   signInGoogle: 'Google арқылы кіру',
+  signInApple: 'Apple арқылы кіру',
   authOpening: 'Браузер ашылуда…',
   authCancelled: 'Кіру тоқтатылды.',
   authFailed: 'Кіру сәтсіз аяқталды. Қайталап көріңіз.',
