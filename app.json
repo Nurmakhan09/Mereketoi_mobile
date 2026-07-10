@@ -11,9 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "usesAppleSignIn": true,
-      "associatedDomains": ["applinks:mereketoi.kz"],
+      "associatedDomains": [
+        "applinks:mereketoi.kz"
+      ],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет.",
         "ITSAppUsesNonExemptEncryption": false
