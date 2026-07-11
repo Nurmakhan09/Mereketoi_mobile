@@ -40,7 +40,6 @@ export default function PublishPaymentScreen() {
 
   const isRenew = mode === 'renew';
   const title = isRenew ? t.renewPayTitle : t.publishPayTitle;
-  const intro = isRenew ? t.renewPayIntro : t.publishPayIntro;
 
   const [packages, setPackages] = useState<BillingPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,12 +123,41 @@ export default function PublishPaymentScreen() {
     );
   }
 
+  // Launch model: every publish package is free (0 KZT). When that holds, show a plain
+  // confirmation with one "Publish" button — NO price, package picker, card icon or
+  // "оплата" wording — so the app carries no purchase flow (App Store 2.1(b) / 2.2).
+  // If a paid package ever appears, fall back to the package list automatically.
+  const freePackages = packages.filter((p) => p.price <= 0);
+  const allFree = packages.length > 0 && freePackages.length === packages.length;
+  const intro = allFree
+    ? (isRenew ? t.freeRenewIntro : t.freePublishIntro)
+    : (isRenew ? t.renewPayIntro : t.publishPayIntro);
+
   return (
     <Screen scroll padded>
       <Text variant="small" color={Colors.textMuted} style={styles.intro}>{intro}</Text>
 
       {packages.length === 0 ? (
         <EmptyState icon="pricetags-outline" title={t.packagesEmpty} />
+      ) : allFree ? (
+        <View style={styles.list}>
+          {freePackages[0].duration_days ? (
+            <View style={styles.durationRow}>
+              <Ionicons name="time-outline" size={14} color={Colors.textFaint} />
+              <Text variant="xsmall" color={Colors.textFaint} style={styles.durationTxt}>
+                {freePackages[0].duration_days} {t.daysShort}
+              </Text>
+            </View>
+          ) : null}
+          <Button
+            title={isRenew ? t.freeRenewAction : t.freePublishAction}
+            icon="checkmark-circle-outline"
+            loading={busyId !== null}
+            disabled={busyId !== null}
+            onPress={() => onPay(freePackages[0])}
+            style={styles.pkgBtn}
+          />
+        </View>
       ) : (
         <View style={styles.list}>
           {packages.map((pkg) => (

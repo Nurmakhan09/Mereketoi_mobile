@@ -17,9 +17,14 @@
         "applinks:mereketoi.kz"
       ],
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет.",
+        "NSPhotoLibraryUsageDescription": "Access to your photo library is needed to add photos to your listing.",
         "ITSAppUsesNonExemptEncryption": false
       }
+    },
+    "locales": {
+      "en": "./ios-locales/en.json",
+      "ru": "./ios-locales/ru.json",
+      "kk": "./ios-locales/kk.json"
     },
     "android": {
       "package": "mereketoi.kz",
@@ -62,7 +67,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+          "photosPermission": "Access to your photo library is needed to add photos to your listing."
         }
       ],
       [

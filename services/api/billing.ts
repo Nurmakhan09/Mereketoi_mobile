@@ -48,7 +48,10 @@ export interface PaymentCreateResult {
   invoice_id: string;
   amount: number;
   currency: string;
-  checkout_url: string;
+  /** null when the invoice needs no payment (free package — already activated server-side). */
+  checkout_url: string | null;
+  /** 'paid' immediately for a free (0-amount) invoice; 'pending' when a Halyk checkout follows. */
+  status?: InvoiceStatus;
 }
 
 export type InvoiceStatus = 'pending' | 'paid' | 'failed' | 'cancelled' | string;

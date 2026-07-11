@@ -36,6 +36,13 @@ export async function runHalykCheckout(params: {
     listing_uuid: LISTING_TYPES.includes(params.purchaseType) ? params.listingUuid : undefined,
   });
 
+  // Free package: the server already activated the benefit and returned no checkout_url,
+  // so there is nothing to pay — never open a browser. (Current launch model: publishing
+  // is free, and this keeps the app free of any purchase flow.)
+  if (res.status === 'paid' || !res.checkout_url) {
+    return 'paid';
+  }
+
   await WebBrowser.openBrowserAsync(res.checkout_url);
 
   for (let i = 0; i < 20; i++) {
