@@ -141,14 +141,6 @@ export default function PublishPaymentScreen() {
         <EmptyState icon="pricetags-outline" title={t.packagesEmpty} />
       ) : allFree ? (
         <View style={styles.list}>
-          {freePackages[0].duration_days ? (
-            <View style={styles.durationRow}>
-              <Ionicons name="time-outline" size={14} color={Colors.textFaint} />
-              <Text variant="xsmall" color={Colors.textFaint} style={styles.durationTxt}>
-                {freePackages[0].duration_days} {t.daysShort}
-              </Text>
-            </View>
-          ) : null}
           <Button
             title={isRenew ? t.freeRenewAction : t.freePublishAction}
             icon="checkmark-circle-outline"
