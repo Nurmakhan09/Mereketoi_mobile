@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:mereketoi.kz"
