@@ -15,6 +15,7 @@ import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
+import { categoryIcon } from '@/utils/categoryIcon';
 import { ListingCard as ListingCardType, Category } from '@/types';
 
 /** Home / Discovery — hero search, parent-category strip, recommended grid. */
@@ -162,7 +163,7 @@ function CategoryBubble({
   return (
     <Pressable style={styles.bubble} onPress={onPress}>
       <View style={styles.bubbleIcon}>
-        <Ionicons name="grid-outline" size={20} color={Colors.primary} />
+        <Ionicons name={categoryIcon(category.slug)} size={20} color={Colors.primary} />
       </View>
       <Text variant="xsmall" color={Colors.textBody} center numberOfLines={2} style={styles.bubbleLabel}>
         {label}

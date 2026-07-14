@@ -20,6 +20,7 @@ import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
+import { categoryIcon } from '@/utils/categoryIcon';
 import { ListingCard as ListingCardType, SortOption, PriceType } from '@/types';
 
 const SORTS: SortOption[] = ['newest', 'oldest', 'price_asc', 'price_desc'];
@@ -253,7 +254,7 @@ export default function SearchScreen() {
         >
           {catSuggestions.map((c) => (
             <Pressable key={c.slug} style={styles.catChip} onPress={() => onPickCategory(c.slug)}>
-              <Ionicons name="grid-outline" size={14} color={Colors.primary} />
+              <Ionicons name={categoryIcon(c.slug)} size={14} color={Colors.primary} />
               <Text variant="small" color={Colors.primary} style={styles.catChipTxt} numberOfLines={1}>
                 {localized(c, 'name', locale)}
               </Text>
