@@ -102,8 +102,8 @@ export default function ForgotPasswordScreen() {
         {step === 1 ? (
           <>
             <FormField
-              label={t.loginField}
-              placeholder={t.loginPlaceholder}
+              label={t.email}
+              placeholder="email@example.com"
               value={login}
               onChangeText={setLogin}
               autoCapitalize="none"

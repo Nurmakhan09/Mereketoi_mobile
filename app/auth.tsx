@@ -64,10 +64,12 @@ export default function AuthScreen() {
     if (!id) {
       e.login = t.loginRequired;
     } else {
-      // Email-only registration for now (phone sign-up will be added later). On
-      // register we require a valid email so we never send garbage to the server.
+      // Register accepts an email OR a KZ phone (mirrors the backend LoginIdentifier:
+      // +7/7/8 + 10 digits, or a bare 10-digit number). Login stays permissive.
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id);
-      if (mode === 'register' && !isEmail) e.login = t.loginInvalid;
+      const digits = id.replace(/\D/g, '');
+      const isPhone = digits.length === 10 || (digits.length === 11 && /^[78]/.test(digits));
+      if (mode === 'register' && !isEmail && !isPhone) e.login = t.loginInvalid;
     }
     if (!password) e.password = t.passwordRequired;
     else if (mode === 'register' && password.length < 8) e.password = t.passwordTooShort;
@@ -200,10 +202,11 @@ export default function AuthScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FormField
           label={t.loginField}
+          placeholder={t.loginPlaceholder}
           value={loginVal}
           onChangeText={setLoginVal}
           autoCapitalize="none"
-          keyboardType="email-address"
+          keyboardType="default"
           error={errors.login}
         />
         {mode === 'register' ? (
