@@ -17,6 +17,9 @@ export const Endpoints = {
   authForgot: '/auth/forgot-password',
   authForgotVerify: '/auth/forgot-password/verify',
   authForgotReset: '/auth/forgot-password/reset',
+  // Feedback (public; links the user if a Bearer token is present)
+  feedback: '/feedback',
+
   // Auth (Bearer)
   authLogout: '/auth/logout',
   me: '/me',
