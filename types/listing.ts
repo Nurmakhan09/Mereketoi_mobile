@@ -35,6 +35,8 @@ export interface ListingCard {
   is_free: boolean; // promo flag (free_until window), NOT availability
   today_status: TodayStatus;
   district: LocaleNamed | null;
+  /** Instagram handle («@name») or full URL — public on every listing. */
+  instagram?: string | null;
 }
 
 export interface ListingImage {
@@ -79,6 +81,7 @@ export interface OwnerListingDetail extends OwnerListing {
   full_description: string | null;
   contact_name: string | null;
   contact_phone: string | null;
+  instagram: string | null;
   details: ListingDetails;
   images: { id: number; path: string; is_main: boolean }[];
 }
@@ -108,6 +111,7 @@ export interface ListingFormData {
   price_type?: PriceType;
   contact_name?: string;
   contact_phone?: string;
+  instagram?: string;
   details?: ListingDetails;
 }
 

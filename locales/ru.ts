@@ -177,6 +177,8 @@ const ru: Strings = {
   fieldPhotoHint: 'Качественные фото повышают доверие',
   fieldPhone: 'Телефон',
   fieldPhoneHint: 'Нужен для связи с клиентом. Открывается только по кнопке «Показать телефон».',
+  fieldInstagram: 'Instagram',
+  fieldInstagramHint: 'Ваш Instagram: @username или полная ссылка. Показывается в объявлении.',
   fieldContactName: 'Контактное имя',
   addPhoto: 'Добавить фото',
   saveDraft: 'Сохранить черновик',

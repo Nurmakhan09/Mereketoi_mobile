@@ -185,6 +185,8 @@ const kk = {
   fieldPhotoHint: 'Сапалы фото сенімділікті арттырады',
   fieldPhone: 'Телефон',
   fieldPhoneHint: 'Клиент байланысу үшін қолданылады. Тек "Телефонды көрсету" батырмасымен ашылады.',
+  fieldInstagram: 'Instagram',
+  fieldInstagramHint: 'Instagram парақшаңыз: @username немесе толық сілтеме. Хабарландыруда көрсетіледі.',
   fieldContactName: 'Байланыс аты',
   addPhoto: 'Фото қосу',
   saveDraft: 'Жобаны сақтау',

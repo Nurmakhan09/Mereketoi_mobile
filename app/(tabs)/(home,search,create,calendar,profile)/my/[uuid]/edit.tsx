@@ -73,6 +73,7 @@ export default function EditListingScreen() {
   const [priceType, setPriceType] = useState<PriceType>('negotiable');
   const [priceAmount, setPriceAmount] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [instagram, setInstagram] = useState('');
 
   const [regions, setRegions] = useState<Region[]>([]);
   const [regionCities, setRegionCities] = useState<City[]>([]);
@@ -99,6 +100,7 @@ export default function EditListingScreen() {
       setPriceType(d.price_type === 'not_specified' ? 'negotiable' : d.price_type ?? 'negotiable');
       setPriceAmount(d.price_amount != null ? String(d.price_amount) : '');
       setContactPhone(d.contact_phone ? formatPhoneInput(d.contact_phone) : '');
+      setInstagram(d.instagram ?? d.details?.instagram ?? '');
       navigation.setOptions({ title: d.status === 'draft' ? t.createTitle : t.editTitle });
     } catch {
       setError(true);
@@ -156,6 +158,7 @@ export default function EditListingScreen() {
     price_type: priceType,
     price_amount: priceType === 'fixed' && priceAmount ? parseInt(priceAmount, 10) : null,
     contact_phone: contactPhone.replace(/\D/g, '') ? contactPhone.trim() : '',
+    instagram: instagram.trim(),
   });
 
   const handleApiError = (e: unknown) => {
@@ -188,6 +191,7 @@ export default function EditListingScreen() {
     if (shortDesc.trim().length < SHORT_MIN || shortDesc.trim().length > SHORT_MAX) return false;
     if (fullDesc.trim().length < FULL_MIN || fullDesc.trim().length > FULL_MAX) return false;
     if (contactPhone.replace(/\D/g, '').length < 10) return false;
+    if (instagram.trim().length < 2) return false; // required for ALL categories (owner 2026-07-17)
     if (priceType === 'fixed' && !priceAmount) return false;
     if (!data || data.images.length < 1) return false;
     return true;
@@ -462,6 +466,16 @@ export default function EditListingScreen() {
         onChangeText={(v) => setContactPhone(formatPhoneInput(v))}
         keyboardType="phone-pad"
         error={errors.contact_phone}
+      />
+      <FormField
+        label={t.fieldInstagram}
+        hint={t.fieldInstagramHint}
+        required
+        value={instagram}
+        onChangeText={setInstagram}
+        autoCapitalize="none"
+        maxLength={120}
+        error={errors.instagram}
       />
 
       {/* Actions — Preview + Publish, both enabled only when fully filled */}

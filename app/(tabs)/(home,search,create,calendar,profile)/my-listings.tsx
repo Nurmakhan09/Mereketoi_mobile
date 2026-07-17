@@ -291,6 +291,7 @@ function InfoBlock({ item, detail, t }: { item: OwnerListing; detail: OwnerListi
     { label: t.fieldRegion, value: item.location_text || '—' },
     { label: t.fieldPrice, value: price },
     { label: t.fieldPhone, value: detail?.contact_phone || '—' },
+    { label: 'Instagram', value: detail?.instagram || '—' },
   ];
   if (item.short_description) rows.push({ label: t.fieldShortDesc, value: item.short_description });
   if (detail?.full_description) rows.push({ label: t.fieldDescription, value: detail.full_description });

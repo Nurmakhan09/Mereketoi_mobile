@@ -212,6 +212,24 @@ export default function ListingDetailScreen() {
             style={styles.bookBtn}
           />
 
+          {/* Instagram — shown on every listing (owner 2026-07-17) */}
+          {data.instagram ? (
+            <Button
+              title={
+                data.instagram.startsWith('http') ? 'Instagram' : `@${data.instagram.replace(/^@/, '')}`
+              }
+              icon="logo-instagram"
+              onPress={() => {
+                const insta = data.instagram!;
+                const url = insta.startsWith('http')
+                  ? insta
+                  : `https://instagram.com/${insta.replace(/^@/, '')}`;
+                Linking.openURL(url).catch(() => {});
+              }}
+              style={styles.instaBtn}
+            />
+          ) : null}
+
           {/* Secondary actions */}
           <View style={styles.secondaryRow}>
             <Button
@@ -302,6 +320,8 @@ const styles = StyleSheet.create({
   },
   calLinkText: { flex: 1, marginLeft: Spacing.sm },
   bookBtn: { marginTop: Spacing.lg },
+  // Instagram brand pink (fixed both themes — it's the platform's color).
+  instaBtn: { marginTop: Spacing.md, backgroundColor: '#E1306C', borderColor: '#E1306C' },
   secondaryRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
   flex1: { flex: 1 },
   cta: {
