@@ -302,7 +302,7 @@ export default function EditListingScreen() {
       {/* Basic */}
       <SectionTitle text={t.sectionBasic} />
       <FormField
-        label={t.fieldTitle}
+        label={t.fieldTitleForm}
         hint={t.fieldTitleHint}
         required
         value={title}
