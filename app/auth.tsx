@@ -22,6 +22,7 @@ import {
 } from '@/services/api/auth';
 import { runBrowserAuth } from '@/features/auth/browserAuth';
 import { setItem, StorageKeys } from '@/services/storage';
+import { formatPhoneInput } from '@/utils/format';
 import { ApiError } from '@/types/api';
 
 type Mode = 'login' | 'register';
@@ -48,6 +49,26 @@ export default function AuthScreen() {
 
   const trimmedLogin = loginVal.trim();
   const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedLogin);
+  const loginLooksPhone = loginVal.startsWith('+7');
+
+  // Mirrors the website's combined login field (app.js initLoginField): typing a
+  // digit or '+' switches the field to PHONE mode instantly (digits → «+7 707 …»);
+  // any letter keeps free-text email mode.
+  const onLoginChange = (v: string) => {
+    const trimmed = v.trim();
+    const digits = v.replace(/\D/g, '');
+    const looksPhone = trimmed !== '' && /^[\s+\d(]/.test(trimmed) && !/[A-Za-z@]/.test(v);
+    if (!looksPhone) {
+      setLoginVal(v);
+      return;
+    }
+    // Deleting down to the bare «+7» prefix clears the field (backspace works).
+    if (v.length < loginVal.length && digits.length <= 1) {
+      setLoginVal('');
+      return;
+    }
+    setLoginVal(formatPhoneInput(v));
+  };
 
   // Sign in with Apple exists on iOS 13+ only. App Store guideline 4.8 requires it
   // wherever we offer a third-party login (we offer Google), so it must be shown.
@@ -176,6 +197,8 @@ export default function AuthScreen() {
       const res = await apiLogin({ login: trimmedLogin, password });
       await setSession(res.token, res.user);
       afterAuth();
+      // The login just revived a soft-deleted account (30-day window).
+      if (res.restored) Alert.alert(t.appName, t.accountRestored);
     } catch (err) {
       showApiError(err);
     } finally {
@@ -253,9 +276,9 @@ export default function AuthScreen() {
             label={t.loginField}
             placeholder={t.loginPlaceholder}
             value={loginVal}
-            onChangeText={setLoginVal}
+            onChangeText={onLoginChange}
             autoCapitalize="none"
-            keyboardType="default"
+            keyboardType={loginLooksPhone ? 'phone-pad' : 'default'}
             error={errors.login}
           />
         ) : (

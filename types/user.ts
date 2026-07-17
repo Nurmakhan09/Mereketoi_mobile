@@ -17,4 +17,6 @@ export interface User {
 export interface AuthResult {
   token: string;
   user: User;
+  /** True when this login just revived a soft-deleted account (≤30 days). */
+  restored?: boolean;
 }

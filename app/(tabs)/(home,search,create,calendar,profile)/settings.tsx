@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, Alert, Pressable, Appearance } from 'react-native';
+import { View, StyleSheet, Alert, Pressable } from 'react-native';
 import { router, useNavigation } from 'expo-router';
-import * as Updates from 'expo-updates';
 
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
-import { Colors, Radius, Spacing, THEME_PREF_KEY, ThemePref, bootThemePref } from '@/constants/theme';
-import { setItem, deleteItem } from '@/services/storage';
+import { ThemeSwitch } from '@/components/ThemeSwitch';
+import { Colors, Spacing } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
@@ -122,7 +121,7 @@ export default function SettingsScreen() {
         {t.themeTitle}
       </Text>
       <Card padded>
-        <ThemePicker t={t} />
+        <ThemeSwitch />
       </Card>
 
       {/* Account */}
@@ -194,61 +193,6 @@ export default function SettingsScreen() {
   );
 }
 
-function ThemePicker({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
-  const [pref, setPref] = useState<ThemePref>(bootThemePref);
-  const [switching, setSwitching] = useState(false);
-
-  const options: { value: ThemePref; label: string }[] = [
-    { value: 'system', label: t.themeSystem },
-    { value: 'light', label: t.themeLight },
-    { value: 'dark', label: t.themeDark },
-  ];
-
-  const onPick = async (value: ThemePref) => {
-    if (value === pref || switching) return;
-    setPref(value);
-    setSwitching(true);
-    try {
-      if (value === 'system') {
-        await deleteItem(THEME_PREF_KEY);
-        Appearance.setColorScheme(null); // hand native chrome back to the OS
-      } else {
-        await setItem(THEME_PREF_KEY, value);
-      }
-      // Re-launch the JS bundle so the whole app repaints in the new theme.
-      await Updates.reloadAsync();
-    } catch {
-      // Expo Go / dev: reload API unavailable — applies on the next launch.
-      setSwitching(false);
-      Alert.alert(t.appName, t.themeRestartHint);
-    }
-  };
-
-  return (
-    <>
-      <View style={styles.themeRow}>
-        {options.map((o) => {
-          const active = pref === o.value;
-          return (
-            <Pressable
-              key={o.value}
-              onPress={() => void onPick(o.value)}
-              style={[styles.themeOpt, active && styles.themeOptActive]}
-            >
-              <Text variant="small" color={active ? Colors.white : Colors.textBody} center>
-                {o.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text variant="xsmall" color={Colors.textMuted} style={styles.themeHint}>
-        {t.themeHint}
-      </Text>
-    </>
-  );
-}
-
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.row}>
@@ -264,19 +208,6 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   section: { marginTop: Spacing.lg, marginBottom: Spacing.md },
-  themeRow: { flexDirection: 'row', gap: Spacing.sm },
-  themeOpt: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xs,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  themeOptActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  themeHint: { marginTop: Spacing.md },
   forgotLink: { alignSelf: 'center', marginTop: Spacing.md, paddingVertical: 4 },
   dangerHint: { marginBottom: Spacing.md },
   row: { marginBottom: Spacing.md },

@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/Logo';
+import { ThemeSwitch } from '@/components/ThemeSwitch';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
@@ -142,6 +143,14 @@ export default function ProfileScreen() {
       {/* Language */}
       <LangSwitch />
 
+      {/* Theme — available to GUESTS too (owner request 2026-07-17). */}
+      <Text variant="small" color={Colors.textMuted} style={styles.themeLabel}>
+        {t.themeTitle}
+      </Text>
+      <Card style={styles.menu} padded>
+        <ThemeSwitch showHint={false} />
+      </Card>
+
       {/* CMS links */}
       <Card style={styles.menu} padded={false}>
         <MenuItem icon="information-circle-outline" label={t.menuAbout} onPress={() => router.push('/page/about')} />
@@ -271,6 +280,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xs,
   },
   langLabel: {},
+  themeLabel: { marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs },
   langSwitch: {
     flexDirection: 'row',
     borderWidth: 1,

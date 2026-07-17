@@ -72,10 +72,12 @@ export const DarkPalette: Record<PaletteKey, string> = {
   surface: '#121828',
   surfaceMuted: '#1A2133',
 
-  text: '#A5B4FC',
-  textBody: '#E5E7EB',
-  textMuted: '#98A2B3',
-  textFaint: '#6C7689',
+  // Owner request 2026-07-17: ALL text is WHITE in dark mode (muted/faint stay
+  // near-white so hierarchy survives without going grey).
+  text: '#FFFFFF',
+  textBody: '#FFFFFF',
+  textMuted: '#E3E7EF',
+  textFaint: '#C6CDD9',
 
   border: '#28324A',
   borderStrong: '#394562',
