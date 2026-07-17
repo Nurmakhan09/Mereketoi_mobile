@@ -20,7 +20,7 @@ export const API_BASE_URL = `${WEB_URL}/api/v1`;
 export const UPLOADS_BASE_URL = `${WEB_URL}/uploads`;
 
 /** This app's own semantic version (compared against app-config.min_version). */
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 
 /** Request timeout (ms). */
 export const REQUEST_TIMEOUT = 20000;

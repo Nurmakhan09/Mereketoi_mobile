@@ -2,7 +2,7 @@
   "expo": {
     "name": "Mereketoi",
     "slug": "mereketoi-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mereketoi",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:mereketoi.kz"
