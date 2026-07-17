@@ -19,6 +19,12 @@ export function sendRegisterCode(login: string, lang?: 'kk' | 'ru') {
   return apiPost<{ sent: boolean }>(Endpoints.authRegisterSendCode, { login, lang });
 }
 
+/** POST /auth/register/verify — checks the emailed code WITHOUT consuming it
+ *  (step 2); the code stays valid for the final register call. */
+export function verifyRegisterCode(login: string, code: string) {
+  return apiPost<{ verified: boolean }>(Endpoints.authRegisterVerify, { login, code });
+}
+
 /** GET /me — refresh the current user (validates the token). */
 export function fetchMe() {
   return apiGet<{ user: User }>(Endpoints.me).then((d) => d.user);

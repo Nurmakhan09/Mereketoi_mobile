@@ -14,6 +14,7 @@ export const Endpoints = {
   authLogin: '/auth/login',
   authRegister: '/auth/register',
   authRegisterSendCode: '/auth/register/send-code',
+  authRegisterVerify: '/auth/register/verify',
   authOauth: (provider: string) => `/auth/oauth/${provider}`,
   authForgot: '/auth/forgot-password',
   authForgotVerify: '/auth/forgot-password/verify',

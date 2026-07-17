@@ -150,6 +150,7 @@ const kk = {
   // Email-verified registration
   registerCodeSent: 'Растау коды email-ге жіберілді. Хатты (Spam қалтасын да) тексеріп, кодты енгізіңіз.',
   resendCode: 'Кодты қайта жіберу',
+  changeLogin: 'Өзгерту',
 
   // Create / edit form
   createTitle: 'Хабарландыру беру',

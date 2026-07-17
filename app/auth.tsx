@@ -12,12 +12,23 @@ import { FormField } from '@/components/ui/FormField';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
-import { login as apiLogin, register as apiRegister, sendRegisterCode, fetchMe, oauthSignIn } from '@/services/api/auth';
+import {
+  login as apiLogin,
+  register as apiRegister,
+  sendRegisterCode,
+  verifyRegisterCode,
+  fetchMe,
+  oauthSignIn,
+} from '@/services/api/auth';
 import { runBrowserAuth } from '@/features/auth/browserAuth';
 import { setItem, StorageKeys } from '@/services/storage';
 import { ApiError } from '@/types/api';
 
 type Mode = 'login' | 'register';
+/** Register wizard (owner request 2026-07-17 — strict order):
+ *  1 = email (or phone) → «Код жіберу» · 2 = enter + verify the emailed code ·
+ *  3 = name + password → «Тіркелу». Phone logins skip step 2 (no email to verify). */
+type RegStep = 1 | 2 | 3;
 
 /** Auth screen — native login/register form (works in Expo Go) + Google via browser. */
 export default function AuthScreen() {
@@ -26,25 +37,17 @@ export default function AuthScreen() {
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
 
   const [mode, setMode] = useState<Mode>('login');
+  const [regStep, setRegStep] = useState<RegStep>(1);
   const [loginVal, setLoginVal] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<'form' | 'google' | 'apple' | null>(null);
 
-  // Email-verified registration (owner request 2026-07-17: a made-up email must
-  // not be able to register). First «Тіркелу» press emails a 6-digit code; the
-  // account is created only when that code is entered (backend enforces it too).
-  const [code, setCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
-  const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginVal.trim());
-
-  // Changing the email (or the mode) invalidates the sent-code step.
-  useEffect(() => {
-    setCodeSent(false);
-    setCode('');
-  }, [loginVal, mode]);
+  const trimmedLogin = loginVal.trim();
+  const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedLogin);
 
   // Sign in with Apple exists on iOS 13+ only. App Store guideline 4.8 requires it
   // wherever we offer a third-party login (we offer Google), so it must be shown.
@@ -71,31 +74,11 @@ export default function AuthScreen() {
     else router.replace('/');
   };
 
-  const validate = (): boolean => {
-    const e: Record<string, string> = {};
-    const id = loginVal.trim();
-    if (!id) {
-      e.login = t.loginRequired;
-    } else {
-      // Register accepts an email OR a KZ phone (mirrors the backend LoginIdentifier:
-      // +7/7/8 + 10 digits, or a bare 10-digit number). Login stays permissive.
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id);
-      const digits = id.replace(/\D/g, '');
-      const isPhone = digits.length === 10 || (digits.length === 11 && /^[78]/.test(digits));
-      if (mode === 'register' && !isEmail && !isPhone) e.login = t.loginInvalid;
-    }
-    if (!password) e.password = t.passwordRequired;
-    else if (mode === 'register' && password.length < 8) e.password = t.passwordTooShort;
-    if (mode === 'register') {
-      const nm = name.trim();
-      // Free-form person name (backend parity 2026-06-17: kk/ru/latin, not a
-      // unique handle; min 2 / max 120). Cyrillic names like "Нұрлан" are valid.
-      if (!nm) e.name = t.nameRequired;
-      else if (nm.length < 2) e.name = t.nameInvalid;
-      if (password !== confirm) e.confirm = t.passwordMismatch;
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setRegStep(1);
+    setCode('');
+    setErrors({});
   };
 
   const showApiError = (err: unknown) => {
@@ -107,13 +90,16 @@ export default function AuthScreen() {
     }
   };
 
-  // Step 1 of email registration — send (or resend) the verification code.
+  // ── Register wizard steps ──────────────────────────────────────────────────
+
+  // Step 1 (email path) — send the verification code. The backend rejects an
+  // invalid / already-registered email here, so a bad email never advances.
   const onSendCode = async () => {
     setBusy('form');
     setErrors({});
     try {
-      await sendRegisterCode(loginVal.trim(), locale);
-      setCodeSent(true);
+      await sendRegisterCode(trimmedLogin, locale);
+      setRegStep(2);
       Alert.alert(t.appName, t.registerCodeSent);
     } catch (err) {
       showApiError(err);
@@ -122,34 +108,72 @@ export default function AuthScreen() {
     }
   };
 
-  const onSubmit = async () => {
-    if (!validate()) return;
-
-    // Email registration is two-step: the first press emails the code, the second
-    // (with the code filled in) actually creates the account.
-    if (mode === 'register' && isEmailLogin) {
-      if (!codeSent) {
-        await onSendCode();
-        return;
-      }
-      if (!/^\d{6}$/.test(code.trim())) {
-        setErrors({ code: t.codeRequired });
-        return;
-      }
+  // Step 2 — verify the code on the server (without consuming it) before the
+  // name+password step opens.
+  const onVerifyCode = async () => {
+    if (!/^\d{6}$/.test(code.trim())) {
+      setErrors({ code: t.codeRequired });
+      return;
     }
-
     setBusy('form');
     setErrors({});
     try {
-      const res =
-        mode === 'login'
-          ? await apiLogin({ login: loginVal.trim(), password })
-          : await apiRegister({
-              login: loginVal.trim(),
-              password,
-              name: name.trim(),
-              code: isEmailLogin ? code.trim() : undefined,
-            });
+      await verifyRegisterCode(trimmedLogin, code.trim());
+      setRegStep(3);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Step 3 — name + password, then create the account (the code is consumed
+  // server-side here; email ownership is already proven).
+  const onRegister = async () => {
+    const e: Record<string, string> = {};
+    const nm = name.trim();
+    // Free-form person name (backend parity 2026-06-17: kk/ru/latin, min 2 / max 120).
+    if (!nm) e.name = t.nameRequired;
+    else if (nm.length < 2) e.name = t.nameInvalid;
+    if (!password) e.password = t.passwordRequired;
+    else if (password.length < 8) e.password = t.passwordTooShort;
+    if (password !== confirm) e.confirm = t.passwordMismatch;
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+    setBusy('form');
+    setErrors({});
+    try {
+      const res = await apiRegister({
+        login: trimmedLogin,
+        password,
+        name: nm,
+        code: isEmailLogin ? code.trim() : undefined,
+      });
+      await setSession(res.token, res.user);
+      afterAuth();
+    } catch (err) {
+      // Code expired while the form was being filled → back to the code step.
+      if (err instanceof ApiError && err.fieldErrors?.code) setRegStep(2);
+      showApiError(err);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onLogin = async () => {
+    const e: Record<string, string> = {};
+    if (!trimmedLogin) e.login = t.loginRequired;
+    if (!password) e.password = t.passwordRequired;
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+    setBusy('form');
+    setErrors({});
+    try {
+      const res = await apiLogin({ login: trimmedLogin, password });
       await setSession(res.token, res.user);
       afterAuth();
     } catch (err) {
@@ -159,7 +183,213 @@ export default function AuthScreen() {
     }
   };
 
-  const onGoogle = async () => {
+  const onSubmit = () => {
+    if (mode === 'login') return void onLogin();
+    if (regStep === 1) {
+      const eObj: Record<string, string> = {};
+      if (!trimmedLogin) eObj.login = t.loginRequired;
+      else {
+        // Register accepts an email OR a KZ phone (mirrors the backend LoginIdentifier:
+        // +7/7/8 + 10 digits, or a bare 10-digit number).
+        const digits = trimmedLogin.replace(/\D/g, '');
+        const isPhone = digits.length === 10 || (digits.length === 11 && /^[78]/.test(digits));
+        if (!isEmailLogin && !isPhone) eObj.login = t.loginInvalid;
+      }
+      if (Object.keys(eObj).length) {
+        setErrors(eObj);
+        return;
+      }
+      if (isEmailLogin) return void onSendCode();
+      setRegStep(3); // phone registration: no email code to verify
+      setErrors({});
+      return;
+    }
+    if (regStep === 2) return void onVerifyCode();
+    return void onRegister();
+  };
+
+  const submitTitle =
+    mode === 'login'
+      ? t.loginAction
+      : regStep === 1
+        ? trimmedLogin && !isEmailLogin
+          ? t.next
+          : t.forgotSendCode
+        : regStep === 2
+          ? t.forgotVerify
+          : t.registerAction;
+
+  return (
+    <Screen scroll padded edgeTop>
+      <View style={styles.closeRow}>
+        <Pressable onPress={onClose} hitSlop={8} style={styles.close}>
+          <Ionicons name="close" size={26} color={Colors.textMuted} />
+        </Pressable>
+      </View>
+
+      <View style={styles.hero}>
+        <Logo size="lg" style={styles.heroLogo} />
+        <Text variant="body" center color={Colors.textMuted}>
+          {t.authTitle}
+        </Text>
+      </View>
+
+      {/* Segmented switch */}
+      <View style={styles.segment}>
+        {(['login', 'register'] as Mode[]).map((m) => (
+          <Pressable key={m} style={[styles.seg, mode === m && styles.segActive]} onPress={() => switchMode(m)}>
+            <Text variant="button" color={mode === m ? Colors.white : Colors.textMuted}>
+              {m === 'login' ? t.loginTab : t.registerTab}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Login mode + register step 1: the email/phone field.
+            Register steps 2–3: show the chosen login with a change link instead. */}
+        {mode === 'login' || regStep === 1 ? (
+          <FormField
+            label={t.loginField}
+            placeholder={t.loginPlaceholder}
+            value={loginVal}
+            onChangeText={setLoginVal}
+            autoCapitalize="none"
+            keyboardType="default"
+            error={errors.login}
+          />
+        ) : (
+          <View style={styles.loginSummary}>
+            <Text variant="small" color={Colors.textBody} numberOfLines={1} style={styles.loginSummaryTxt}>
+              {trimmedLogin}
+            </Text>
+            <Pressable
+              onPress={() => {
+                setRegStep(1);
+                setCode('');
+                setErrors({});
+              }}
+              hitSlop={6}
+            >
+              <Text variant="small" color={Colors.primary}>{t.changeLogin}</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Register step 2: the emailed verification code */}
+        {mode === 'register' && regStep === 2 ? (
+          <>
+            <FormField
+              label={t.forgotCodeLabel}
+              placeholder={t.forgotCodePlaceholder}
+              hint={t.registerCodeSent}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/\D/g, ''))}
+              error={errors.code}
+              autoFocus
+            />
+            <Pressable onPress={busy === null ? onSendCode : undefined} hitSlop={6} style={styles.resendLink}>
+              <Text variant="small" color={Colors.primary}>{t.resendCode}</Text>
+            </Pressable>
+          </>
+        ) : null}
+
+        {/* Register step 3: name + password (email is verified by now) */}
+        {mode === 'register' && regStep === 3 ? (
+          <>
+            <FormField
+              label={t.nameField}
+              placeholder={t.namePlaceholder}
+              hint={t.nameHint}
+              autoCapitalize="words"
+              maxLength={120}
+              value={name}
+              onChangeText={setName}
+              error={errors.name}
+            />
+            <FormField
+              label={t.passwordField}
+              placeholder={t.passwordNewPlaceholder}
+              value={password}
+              onChangeText={setPassword}
+              secure
+              error={errors.password}
+            />
+            <FormField
+              label={t.confirmPasswordField}
+              value={confirm}
+              onChangeText={setConfirm}
+              secure
+              error={errors.confirm}
+            />
+          </>
+        ) : null}
+
+        {/* Login mode: password + forgot link */}
+        {mode === 'login' ? (
+          <>
+            <FormField
+              label={t.passwordField}
+              placeholder={t.passwordPlaceholder}
+              value={password}
+              onChangeText={setPassword}
+              secure
+              error={errors.password}
+            />
+            <Pressable onPress={() => router.push('/forgot-password')} hitSlop={6} style={styles.forgotLink}>
+              <Text variant="small" color={Colors.primary}>{t.forgotLink}</Text>
+            </Pressable>
+          </>
+        ) : null}
+
+        <Button
+          title={submitTitle}
+          loading={busy === 'form'}
+          disabled={busy !== null}
+          onPress={onSubmit}
+          style={styles.submit}
+        />
+      </KeyboardAvoidingView>
+
+      <View style={styles.divider}>
+        <View style={styles.line} />
+        <Text variant="xsmall" color={Colors.textFaint} style={styles.orText}>
+          {t.orContinue}
+        </Text>
+        <View style={styles.line} />
+      </View>
+
+      {/* Sign in with Apple — custom HIG-compliant button (black, Apple logo) so the
+          label follows the APP language (kk/ru); the native AppleAuthenticationButton
+          only speaks the device language (owner request 2026-07-17). */}
+      {appleAvailable ? (
+        <Button
+          title={t.signInApple}
+          icon="logo-apple"
+          loading={busy === 'apple'}
+          disabled={busy !== null}
+          onPress={onApple}
+          style={styles.appleButton}
+        />
+      ) : null}
+
+      <Button
+        title={t.signInGoogle}
+        variant="outline"
+        icon="logo-google"
+        loading={busy === 'google'}
+        disabled={busy !== null}
+        onPress={onGoogle}
+        style={appleAvailable ? styles.googleButton : undefined}
+      />
+    </Screen>
+  );
+
+  // ── OAuth handlers (hoisted below JSX for readability) ─────────────────────
+
+  async function onGoogle() {
     setBusy('google');
     try {
       const res = await runBrowserAuth('google');
@@ -183,9 +413,9 @@ export default function AuthScreen() {
     } finally {
       setBusy(null);
     }
-  };
+  }
 
-  const onApple = async () => {
+  async function onApple() {
     setBusy('apple');
     try {
       const credential = await AppleAuthentication.signInAsync({
@@ -215,155 +445,11 @@ export default function AuthScreen() {
     } finally {
       setBusy(null);
     }
-  };
-
-  return (
-    <Screen scroll padded edgeTop>
-      <View style={styles.closeRow}>
-        <Pressable onPress={onClose} hitSlop={8} style={styles.close}>
-          <Ionicons name="close" size={26} color={Colors.textMuted} />
-        </Pressable>
-      </View>
-
-      <View style={styles.hero}>
-        <Logo size="lg" style={styles.heroLogo} />
-        <Text variant="body" center color={Colors.textMuted}>
-          {t.authTitle}
-        </Text>
-      </View>
-
-      {/* Segmented switch */}
-      <View style={styles.segment}>
-        {(['login', 'register'] as Mode[]).map((m) => (
-          <Pressable
-            key={m}
-            style={[styles.seg, mode === m && styles.segActive]}
-            onPress={() => {
-              setMode(m);
-              setErrors({});
-            }}
-          >
-            <Text variant="button" color={mode === m ? Colors.white : Colors.textMuted}>
-              {m === 'login' ? t.loginTab : t.registerTab}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <FormField
-          label={t.loginField}
-          placeholder={t.loginPlaceholder}
-          value={loginVal}
-          onChangeText={setLoginVal}
-          autoCapitalize="none"
-          keyboardType="default"
-          error={errors.login}
-        />
-        {mode === 'register' ? (
-          <FormField
-            label={t.nameField}
-            placeholder={t.namePlaceholder}
-            hint={t.nameHint}
-            autoCapitalize="words"
-            maxLength={120}
-            value={name}
-            onChangeText={setName}
-            error={errors.name}
-          />
-        ) : null}
-        <FormField
-          label={t.passwordField}
-          placeholder={mode === 'register' ? t.passwordNewPlaceholder : t.passwordPlaceholder}
-          value={password}
-          onChangeText={setPassword}
-          secure
-          error={errors.password}
-        />
-        {mode === 'register' ? (
-          <FormField
-            label={t.confirmPasswordField}
-            value={confirm}
-            onChangeText={setConfirm}
-            secure
-            error={errors.confirm}
-          />
-        ) : null}
-
-        {/* Email verification code (register step 2) */}
-        {mode === 'register' && codeSent ? (
-          <>
-            <FormField
-              label={t.forgotCodeLabel}
-              placeholder={t.forgotCodePlaceholder}
-              hint={t.registerCodeSent}
-              keyboardType="number-pad"
-              maxLength={6}
-              value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, ''))}
-              error={errors.code}
-            />
-            <Pressable onPress={busy === null ? onSendCode : undefined} hitSlop={6} style={styles.resendLink}>
-              <Text variant="small" color={Colors.primary}>{t.resendCode}</Text>
-            </Pressable>
-          </>
-        ) : null}
-
-        {mode === 'login' ? (
-          <Pressable onPress={() => router.push('/forgot-password')} hitSlop={6} style={styles.forgotLink}>
-            <Text variant="small" color={Colors.primary}>{t.forgotLink}</Text>
-          </Pressable>
-        ) : null}
-
-        <Button
-          title={
-            mode === 'login'
-              ? t.loginAction
-              : isEmailLogin && !codeSent
-                ? t.forgotSendCode
-                : t.registerAction
-          }
-          loading={busy === 'form'}
-          disabled={busy !== null}
-          onPress={onSubmit}
-          style={styles.submit}
-        />
-      </KeyboardAvoidingView>
-
-      <View style={styles.divider}>
-        <View style={styles.line} />
-        <Text variant="xsmall" color={Colors.textFaint} style={styles.orText}>
-          {t.orContinue}
-        </Text>
-        <View style={styles.line} />
-      </View>
-
-      {/* Apple requires its own button styling for Sign in with Apple (HIG). */}
-      {appleAvailable ? (
-        <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={Radius.md}
-          style={styles.appleButton}
-          onPress={busy === null ? onApple : () => {}}
-        />
-      ) : null}
-
-      <Button
-        title={t.signInGoogle}
-        variant="outline"
-        icon="logo-google"
-        loading={busy === 'google'}
-        disabled={busy !== null}
-        onPress={onGoogle}
-        style={appleAvailable ? styles.googleButton : undefined}
-      />
-    </Screen>
-  );
+  }
 }
 
 const styles = StyleSheet.create({
-  appleButton: { height: 52, width: '100%' },
+  appleButton: { backgroundColor: '#000000', borderColor: '#000000' },
   googleButton: { marginTop: Spacing.sm },
   closeRow: { alignItems: 'flex-end' },
   close: { padding: Spacing.xs },
@@ -383,6 +469,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   segActive: { backgroundColor: Colors.primary },
+  loginSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    marginBottom: Spacing.base,
+    paddingHorizontal: Spacing.xs,
+  },
+  loginSummaryTxt: { flex: 1, fontWeight: '600' },
   forgotLink: { alignSelf: 'flex-end', marginTop: Spacing.sm },
   resendLink: { alignSelf: 'flex-end', marginBottom: Spacing.sm },
   submit: { marginTop: Spacing.sm },
