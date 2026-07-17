@@ -5,10 +5,10 @@ import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackActions } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
-import { GlassView } from 'expo-glass-effect';
 
 import { Colors, Fonts, Radius } from '@/constants/theme';
 import { AddTabIcon } from '@/components/AddTabIcon';
+import { GlassTabBarBackground } from '@/components/GlassTabBarBackground';
 import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { useI18n } from '@/locales';
@@ -120,7 +120,7 @@ export default function TabLayout() {
 
   const tabBarBackground =
     TAB_BAR_MODE === 'glass'
-      ? () => <GlassView style={StyleSheet.absoluteFill} glassEffectStyle="regular" />
+      ? () => <GlassTabBarBackground />
       : TAB_BAR_MODE === 'blur'
         ? () => (
             <BlurView tint="systemChromeMaterialLight" intensity={100} style={StyleSheet.absoluteFill} />
@@ -131,6 +131,9 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // iOS: subtle native-style cross-fade between tab scenes (Android keeps
+        // the platform's instant switch).
+        animation: TAB_BAR_MODE === 'solid' ? 'none' : 'fade',
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle,

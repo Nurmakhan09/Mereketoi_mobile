@@ -12,7 +12,7 @@ import { FormField } from '@/components/ui/FormField';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
-import { login as apiLogin, register as apiRegister, fetchMe, oauthSignIn } from '@/services/api/auth';
+import { login as apiLogin, register as apiRegister, sendRegisterCode, fetchMe, oauthSignIn } from '@/services/api/auth';
 import { runBrowserAuth } from '@/features/auth/browserAuth';
 import { setItem, StorageKeys } from '@/services/storage';
 import { ApiError } from '@/types/api';
@@ -21,7 +21,7 @@ type Mode = 'login' | 'register';
 
 /** Auth screen — native login/register form (works in Expo Go) + Google via browser. */
 export default function AuthScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const setSession = useAuthStore((s) => s.setSession);
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
 
@@ -32,6 +32,19 @@ export default function AuthScreen() {
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<'form' | 'google' | 'apple' | null>(null);
+
+  // Email-verified registration (owner request 2026-07-17: a made-up email must
+  // not be able to register). First «Тіркелу» press emails a 6-digit code; the
+  // account is created only when that code is entered (backend enforces it too).
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginVal.trim());
+
+  // Changing the email (or the mode) invalidates the sent-code step.
+  useEffect(() => {
+    setCodeSent(false);
+    setCode('');
+  }, [loginVal, mode]);
 
   // Sign in with Apple exists on iOS 13+ only. App Store guideline 4.8 requires it
   // wherever we offer a third-party login (we offer Google), so it must be shown.
@@ -85,24 +98,62 @@ export default function AuthScreen() {
     return Object.keys(e).length === 0;
   };
 
+  const showApiError = (err: unknown) => {
+    if (err instanceof ApiError) {
+      if (err.fieldErrors) setErrors(err.fieldErrors);
+      Alert.alert(t.error, err.message);
+    } else {
+      Alert.alert(t.error, t.errorNetwork);
+    }
+  };
+
+  // Step 1 of email registration — send (or resend) the verification code.
+  const onSendCode = async () => {
+    setBusy('form');
+    setErrors({});
+    try {
+      await sendRegisterCode(loginVal.trim(), locale);
+      setCodeSent(true);
+      Alert.alert(t.appName, t.registerCodeSent);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onSubmit = async () => {
     if (!validate()) return;
+
+    // Email registration is two-step: the first press emails the code, the second
+    // (with the code filled in) actually creates the account.
+    if (mode === 'register' && isEmailLogin) {
+      if (!codeSent) {
+        await onSendCode();
+        return;
+      }
+      if (!/^\d{6}$/.test(code.trim())) {
+        setErrors({ code: t.codeRequired });
+        return;
+      }
+    }
+
     setBusy('form');
     setErrors({});
     try {
       const res =
         mode === 'login'
           ? await apiLogin({ login: loginVal.trim(), password })
-          : await apiRegister({ login: loginVal.trim(), password, name: name.trim() });
+          : await apiRegister({
+              login: loginVal.trim(),
+              password,
+              name: name.trim(),
+              code: isEmailLogin ? code.trim() : undefined,
+            });
       await setSession(res.token, res.user);
       afterAuth();
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.fieldErrors) setErrors(err.fieldErrors);
-        Alert.alert(t.error, err.message);
-      } else {
-        Alert.alert(t.error, t.errorNetwork);
-      }
+      showApiError(err);
     } finally {
       setBusy(null);
     }
@@ -239,6 +290,25 @@ export default function AuthScreen() {
           />
         ) : null}
 
+        {/* Email verification code (register step 2) */}
+        {mode === 'register' && codeSent ? (
+          <>
+            <FormField
+              label={t.forgotCodeLabel}
+              placeholder={t.forgotCodePlaceholder}
+              hint={t.registerCodeSent}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/\D/g, ''))}
+              error={errors.code}
+            />
+            <Pressable onPress={busy === null ? onSendCode : undefined} hitSlop={6} style={styles.resendLink}>
+              <Text variant="small" color={Colors.primary}>{t.resendCode}</Text>
+            </Pressable>
+          </>
+        ) : null}
+
         {mode === 'login' ? (
           <Pressable onPress={() => router.push('/forgot-password')} hitSlop={6} style={styles.forgotLink}>
             <Text variant="small" color={Colors.primary}>{t.forgotLink}</Text>
@@ -246,7 +316,13 @@ export default function AuthScreen() {
         ) : null}
 
         <Button
-          title={mode === 'login' ? t.loginAction : t.registerAction}
+          title={
+            mode === 'login'
+              ? t.loginAction
+              : isEmailLogin && !codeSent
+                ? t.forgotSendCode
+                : t.registerAction
+          }
           loading={busy === 'form'}
           disabled={busy !== null}
           onPress={onSubmit}
@@ -308,6 +384,7 @@ const styles = StyleSheet.create({
   },
   segActive: { backgroundColor: Colors.primary },
   forgotLink: { alignSelf: 'flex-end', marginTop: Spacing.sm },
+  resendLink: { alignSelf: 'flex-end', marginBottom: Spacing.sm },
   submit: { marginTop: Spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.lg },
   line: { flex: 1, height: 1, backgroundColor: Colors.border },

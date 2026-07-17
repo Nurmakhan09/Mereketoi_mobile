@@ -147,6 +147,9 @@ const kk = {
   forgotVerify: 'Растау',
   forgotDone: 'Құпия сөз жаңартылды. Жаңа сөзбен кіріңіз.',
   codeRequired: 'Растау кодын енгізіңіз.',
+  // Email-verified registration
+  registerCodeSent: 'Растау коды email-ге жіберілді. Хатты (Spam қалтасын да) тексеріп, кодты енгізіңіз.',
+  resendCode: 'Кодты қайта жіберу',
 
   // Create / edit form
   createTitle: 'Хабарландыру беру',

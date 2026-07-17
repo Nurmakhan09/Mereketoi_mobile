@@ -140,6 +140,9 @@ const ru: Strings = {
   forgotVerify: 'Подтвердить',
   forgotDone: 'Пароль обновлён. Войдите с новым паролем.',
   codeRequired: 'Введите код подтверждения.',
+  // Email-verified registration
+  registerCodeSent: 'Код подтверждения отправлен на email. Проверьте почту (и папку Спам) и введите код.',
+  resendCode: 'Отправить код ещё раз',
 
   createTitle: 'Подать объявление',
   editTitle: 'Редактировать объявление',

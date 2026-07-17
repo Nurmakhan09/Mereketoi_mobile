@@ -7,9 +7,16 @@ export function login(input: { login: string; password: string }) {
   return apiPost<AuthResult>(Endpoints.authLogin, input);
 }
 
-/** POST /auth/register — login + password (+ optional name). Returns {token, user}. */
-export function register(input: { login: string; password: string; name?: string }) {
+/** POST /auth/register — login + password (+ optional name). Email registrations
+ *  must include the 6-digit `code` emailed by sendRegisterCode. Returns {token, user}. */
+export function register(input: { login: string; password: string; name?: string; code?: string }) {
   return apiPost<AuthResult>(Endpoints.authRegister, input);
+}
+
+/** POST /auth/register/send-code — emails a 6-digit verification code to a
+ *  not-yet-registered email (step 1 of email-verified registration). */
+export function sendRegisterCode(login: string, lang?: 'kk' | 'ru') {
+  return apiPost<{ sent: boolean }>(Endpoints.authRegisterSendCode, { login, lang });
 }
 
 /** GET /me — refresh the current user (validates the token). */
