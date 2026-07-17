@@ -104,14 +104,16 @@ export const Shadow = {
 } as const;
 
 /**
- * Quicksand font family names (loaded in app/_layout.tsx via @expo-google-fonts).
- * Falls back to the platform sans until loaded.
+ * Nunito font family names (loaded in app/_layout.tsx via @expo-google-fonts).
+ * Nunito (unlike Quicksand) ships the full Cyrillic-Extended set, so Kazakh
+ * letters (Ә Ғ Қ Ң Ө Ұ Ү Һ І) render in the brand font instead of the system
+ * fallback. Falls back to the platform sans until loaded.
  */
 export const Fonts = {
-  regular: 'Quicksand_400Regular',
-  medium: 'Quicksand_500Medium',
-  semibold: 'Quicksand_600SemiBold',
-  bold: 'Quicksand_700Bold',
+  regular: 'Nunito_400Regular',
+  medium: 'Nunito_500Medium',
+  semibold: 'Nunito_600SemiBold',
+  bold: 'Nunito_700Bold',
 } as const;
 
 /** Type scale (master-spec §1.5). Kazakh runs long — keep line-height ≥1.5 on body. */
@@ -127,7 +129,7 @@ export const Typography = {
   button: { fontFamily: Fonts.semibold, fontSize: 15, lineHeight: 18 },
 } as const;
 
-/** System fallback (used in style helpers when Quicksand isn't loaded yet). */
+/** System fallback (used in style helpers when Nunito isn't loaded yet). */
 export const SystemFont = Platform.select({
   ios: 'System',
   android: 'sans-serif',

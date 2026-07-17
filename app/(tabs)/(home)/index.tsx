@@ -15,6 +15,7 @@ import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { categoryIcon } from '@/utils/categoryIcon';
 import { ListingCard as ListingCardType, Category } from '@/types';
 
@@ -22,6 +23,7 @@ import { ListingCard as ListingCardType, Category } from '@/types';
 export default function HomeScreen() {
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
+  const tabBarPad = useTabBarPadding();
   const { categories, error: taxoError } = useTaxonomy();
   const { isAuthed, requireAuth } = useRequireAuth();
   const favoriteIds = useFavoritesStore((s) => s.ids);
@@ -98,9 +100,17 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Recommended heading */}
+      {/* Recommended heading — slightly smaller than h2 + auto-shrink so the full
+          «Ұсынылған хабарландырулар» always fits on one line next to «Барлығын көру». */}
       <View style={styles.sectionRow}>
-        <Text variant="h2" color={Colors.text} numberOfLines={1} style={styles.sectionHeading}>
+        <Text
+          variant="h2"
+          color={Colors.text}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          style={styles.sectionHeading}
+        >
           {t.recommended}
         </Text>
         <Pressable onPress={() => goSearch()} style={styles.seeAllBtn} hitSlop={6}>
@@ -128,7 +138,7 @@ export default function HomeScreen() {
       keyExtractor={(it) => it.uuid}
       numColumns={2}
       columnWrapperStyle={styles.col}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
       ListHeaderComponent={renderHeader}
       renderItem={({ item }) => (
         <View style={styles.cardCell}>
@@ -207,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sectionHeading: { flex: 1, marginRight: Spacing.sm },
+  sectionHeading: { flex: 1, marginRight: Spacing.sm, fontSize: 19, lineHeight: 25 },
   seeAllBtn: { flexShrink: 0 },
   sectionTitle: { marginBottom: Spacing.md },
   // Compact wrapped grid (4 per row) so every category fits on one screen.

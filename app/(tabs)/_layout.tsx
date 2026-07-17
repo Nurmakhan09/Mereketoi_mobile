@@ -1,14 +1,23 @@
 import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StackActions } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Fonts, Radius } from '@/constants/theme';
 import { AddTabIcon } from '@/components/AddTabIcon';
 import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { useI18n } from '@/locales';
+import {
+  TAB_BAR_MODE,
+  TAB_BAR_HEIGHT,
+  GLASS_SIDE_MARGIN,
+  GLASS_BOTTOM_GAP,
+} from '@/hooks/useTabBarPadding';
 
 /**
  * Bottom navigation — mirrors the web's single shared bar (app/Views/partials/
@@ -16,15 +25,18 @@ import { useI18n } from '@/locales';
  * 5-item bar, identical on every screen, that NEVER changes by auth or published
  * state:
  *   Басты бет · Іздеу · ➕ Жариялау · Күнтізбе · Профиль
- * Only the destinations adapt to auth, and the SCREENS handle that themselves —
- * create.tsx bounces guests to /auth, calendar.tsx renders <GuestGate>, profile
- * shows the guest profile — so the bar's items, order and icons stay constant.
+ * Each tab is its own Stack (group) and every detail route lives in the shared
+ * group `(home,search,create,calendar,profile)`, so the bar stays visible on
+ * EVERY page (owner request 2026-07-17). Only the destinations adapt to auth,
+ * and the SCREENS handle that themselves — create.tsx bounces guests to /auth,
+ * calendar.tsx renders <GuestGate>, profile shows the guest profile.
  *
- * Design = web tokens.css: icons are navy accent (#0B1F4D = Colors.secondary),
- * blue (#000099 = Colors.primary) when active; labels are muted grey, blue when
- * active. The middle «Жариялау» is a filled rounded-square (radius-md) with a
- * white «+» (see AddTabIcon), not a raised circle. Calendar carries the red
- * pending-той-booking badge for providers (9+ cap), mirroring the web partial.
+ * Bar background adapts to the OS (owner request 2026-07-17):
+ *   iOS 26+ → floating Liquid Glass pill (expo-glass-effect), older iOS → classic
+ *   translucent blur bar (expo-blur), Android → the original solid white bar.
+ * Icons/labels keep the web tokens: navy accent (#0B1F4D) inactive, blue
+ * (#000099) active; the middle «Жариялау» is a filled rounded-square (AddTabIcon).
+ * Calendar carries the red pending-той-booking badge for providers (9+ cap).
  */
 export default function TabLayout() {
   const status = useAuthStore((s) => s.status);
@@ -32,10 +44,7 @@ export default function TabLayout() {
   const { t } = useI18n();
 
   const insets = useSafeAreaInsets();
-  // Honour the real safe-area inset so the bar clears the system gesture pill.
   const bottomInset = insets.bottom;
-  const tabBarHeight = (Platform.OS === 'ios' ? 64 : 62) + bottomInset;
-  const tabBarPadBottom = Math.max(bottomInset, 8);
 
   const pendingBookings = useMyListingStore((s) => s.pendingBookings);
   const refreshMine = useMyListingStore((s) => s.refresh);
@@ -51,32 +60,89 @@ export default function TabLayout() {
   const calendarBadge =
     isAuthed && pendingBookings > 0 ? (pendingBookings > 9 ? '9+' : pendingBookings) : undefined;
 
+  // Re-tapping the ACTIVE tab pops its nested stack back to the tab's root screen
+  // (native iOS behaviour) — each tab hosts a Stack now, so without this a deep
+  // detail page would stay put when its own tab icon is tapped.
+  const popToRootOnRepress = ({ navigation, route }: any) => ({
+    tabPress: () => {
+      const state = route?.state;
+      if (navigation.isFocused() && state?.key && (state.index ?? 0) > 0) {
+        navigation.dispatch({ ...StackActions.popToTop(), target: state.key });
+      }
+    },
+  });
+
+  const tabBarStyle =
+    TAB_BAR_MODE === 'glass'
+      ? {
+          // iOS 26 Liquid Glass: floating pill, content scrolls beneath it.
+          position: 'absolute' as const,
+          left: GLASS_SIDE_MARGIN,
+          right: GLASS_SIDE_MARGIN,
+          bottom: bottomInset + GLASS_BOTTOM_GAP,
+          height: TAB_BAR_HEIGHT,
+          borderRadius: Radius.xl,
+          overflow: 'hidden' as const,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          paddingTop: 6,
+          paddingBottom: 8,
+          elevation: 0,
+          shadowOpacity: 0,
+        }
+      : TAB_BAR_MODE === 'blur'
+        ? {
+            // Older iOS: classic edge-to-edge translucent bar.
+            position: 'absolute' as const,
+            backgroundColor: 'transparent',
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: Colors.border,
+            height: TAB_BAR_HEIGHT + bottomInset,
+            paddingTop: 6,
+            paddingBottom: Math.max(bottomInset, 8),
+            elevation: 0,
+            shadowOpacity: 0,
+          }
+        : {
+            // Android: original opaque bar in normal layout flow.
+            backgroundColor: Colors.surface,
+            borderTopColor: Colors.border,
+            height: TAB_BAR_HEIGHT + bottomInset,
+            paddingTop: 6,
+            paddingBottom: Math.max(bottomInset, 8),
+            // Web: box-shadow 0 -2px 12px rgba(15,23,42,0.08)
+            shadowColor: '#0F172A',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            elevation: 8,
+          };
+
+  const tabBarBackground =
+    TAB_BAR_MODE === 'glass'
+      ? () => <GlassView style={StyleSheet.absoluteFill} glassEffectStyle="regular" />
+      : TAB_BAR_MODE === 'blur'
+        ? () => (
+            <BlurView tint="systemChromeMaterialLight" intensity={100} style={StyleSheet.absoluteFill} />
+          )
+        : undefined;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
-        tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.border,
-          height: tabBarHeight,
-          paddingTop: 6,
-          paddingBottom: tabBarPadBottom,
-          // Web: box-shadow 0 -2px 12px rgba(15,23,42,0.08)
-          shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          elevation: 8,
-        },
+        tabBarStyle,
+        tabBarBackground,
         tabBarLabelStyle: { fontFamily: Fonts.semibold, fontSize: 10 },
         // Red pending-booking badge (web .nav-badge: #dc2626 / white).
         tabBarBadgeStyle: { backgroundColor: '#dc2626', color: '#fff', fontSize: 10 },
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="(home)"
+        listeners={popToRootOnRepress}
         options={{
           title: t.tabHome,
           tabBarIcon: ({ focused }) => (
@@ -85,7 +151,8 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="(search)"
+        listeners={popToRootOnRepress}
         options={{
           title: t.tabSearch,
           tabBarIcon: ({ focused }) => (
@@ -94,12 +161,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="create"
+        name="(create)"
         options={{
           title: t.tabCreate,
           tabBarIcon: ({ focused }) => <AddTabIcon focused={focused} />,
         }}
-        listeners={{
+        listeners={(ctx) => ({
           // Guests must NOT mount create.tsx: push the auth modal from the ROOT context on
           // the gesture (the GuestGate pattern), instead of letting create.tsx fire a
           // cross-navigator router.replace inside useFocusEffect — that asymmetry can
@@ -108,12 +175,15 @@ export default function TabLayout() {
             if (!isAuthed) {
               e.preventDefault();
               router.push({ pathname: '/auth', params: { returnTo: '/create' } });
+              return;
             }
+            popToRootOnRepress(ctx).tabPress();
           },
-        }}
+        })}
       />
       <Tabs.Screen
-        name="calendar"
+        name="(calendar)"
+        listeners={popToRootOnRepress}
         options={{
           title: t.calendarTitle,
           tabBarBadge: calendarBadge,
@@ -123,16 +193,8 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="my-listings"
-        options={{
-          // One-listing model: reached via the profile menu / create flow, never
-          // a bottom tab. Kept as a route only (the web bar has no «my listing» slot).
-          href: null,
-          title: t.myListing,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
+        name="(profile)"
+        listeners={popToRootOnRepress}
         options={{
           title: t.tabProfile,
           tabBarIcon: ({ focused }) => (

@@ -33,12 +33,17 @@ export default function CreateTab() {
     }
     setError(false);
     try {
-      // Has a listing already? → My Listings page. Otherwise create the first draft
-      // and open the editor.
+      // Has a listing already? A listing WITH content → My Listings hub. A BLANK
+      // draft (no title, no cover) → straight into the editor to finish it —
+      // sending it to the hub bounced «Жаңа хабарландыру» back here forever, so
+      // the ad could never be filled in / published. No listing → create the
+      // first draft and open the editor.
       const res = await fetchMyListings();
       const existing = res.items.find((i) => i.status !== 'deleted');
       if (existing) {
-        router.replace('/my-listings');
+        const hasContent = (existing.title ?? '').trim() !== '' || !!existing.main_image;
+        if (hasContent) router.replace('/my-listings');
+        else router.replace(`/my/${existing.uuid}/edit`);
         return;
       }
       const uuid = await createListing();

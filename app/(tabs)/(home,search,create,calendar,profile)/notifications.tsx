@@ -22,6 +22,7 @@ import {
 } from '@/services/api/notifications';
 import { formatDate } from '@/utils/format';
 import { navigateFromActionUrl } from '@/utils/notificationLink';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { AppNotification, Reminder } from '@/types';
 
 type Tab = 'inbox' | 'reminders';
@@ -30,6 +31,7 @@ type Tab = 'inbox' | 'reminders';
 export default function NotificationsScreen() {
   const { t } = useI18n();
   const navigation = useNavigation();
+  const tabBarPad = useTabBarPadding();
   const [tab, setTab] = useState<Tab>('inbox');
 
   // inbox
@@ -144,7 +146,7 @@ export default function NotificationsScreen() {
           data={items}
           keyExtractor={(it) => String(it.id)}
           ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
           renderItem={({ item }) => (
             <Pressable
               style={[styles.row, !item.is_read && styles.rowUnread]}
@@ -172,7 +174,7 @@ export default function NotificationsScreen() {
           data={reminders}
           keyExtractor={(it) => String(it.id)}
           ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
           renderItem={({ item }) => (
             <Card style={styles.remRow} padded>
               <Pressable onPress={() => onToggleReminder(item)} hitSlop={6}>

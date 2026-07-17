@@ -19,12 +19,14 @@ import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListing, fetchPhone, reportListing } from '@/services/api/listings';
 import { imageUrl } from '@/utils/imageUrl';
 import { formatPrice, formatPhone } from '@/utils/format';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { ListingDetail, ReportReason } from '@/types';
 
 export default function ListingDetailScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { t, locale } = useI18n();
   const navigation = useNavigation();
+  const tabBarPad = useTabBarPadding();
   const { width, height } = useWindowDimensions();
   const { isAuthed, requireAuth } = useRequireAuth();
   const favoriteIds = useFavoritesStore((s) => s.ids);
@@ -114,7 +116,8 @@ export default function ListingDetailScreen() {
 
   return (
     <View style={styles.fill}>
-      <Screen scroll>
+      {/* The sticky CTA below handles the tab-bar clearance, not the scroll body. */}
+      <Screen scroll tabBarAware={false}>
         {/* Gallery */}
         <View style={[styles.gallery, { height: width * 0.7 }]}>
           {images.length ? (
@@ -128,7 +131,14 @@ export default function ListingDetailScreen() {
             >
               {images.map((img, i) => (
                 <Pressable key={i} onPress={() => setViewerIndex(i)}>
-                  <Image source={{ uri: imageUrl(img.path) ?? '' }} style={{ width, height: width * 0.7 }} contentFit="cover" />
+                  <Image
+                    source={{ uri: imageUrl(img.path) ?? '' }}
+                    style={{ width, height: width * 0.7 }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    priority={i === 0 ? 'high' : 'normal'}
+                    transition={100}
+                  />
                 </Pressable>
               ))}
             </ScrollView>
@@ -219,8 +229,8 @@ export default function ListingDetailScreen() {
         </View>
       </Screen>
 
-      {/* Sticky contact CTA */}
-      <View style={styles.cta}>
+      {/* Sticky contact CTA — lifted above the floating tab bar on iOS. */}
+      <View style={[styles.cta, tabBarPad ? { paddingBottom: Spacing.base + tabBarPad } : null]}>
         {phone ? (
           <View style={styles.ctaRow}>
             <Button title={`${t.callPhone} ${formatPhone(phone)}`} icon="call" onPress={onCall} style={styles.flex1} />

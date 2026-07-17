@@ -9,6 +9,7 @@ import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { Locale } from '@/stores/localeStore';
 import { fetchBookingHistory } from '@/services/api/weddingPlan';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { BookingHistoryEntry } from '@/types';
 import { formatNumber } from '@/utils/format';
 
@@ -85,6 +86,7 @@ function buildDiffs(entry: BookingHistoryEntry): Diff[] {
 export default function BookingHistoryScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
+  const tabBarPad = useTabBarPadding();
   const [items, setItems] = useState<BookingHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -118,7 +120,7 @@ export default function BookingHistoryScreen() {
       <FlatList
         data={items}
         keyExtractor={(_, i) => String(i)}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
         renderItem={({ item }) => {
           const tone = toneOf(item.action);
           const diffs = buildDiffs(item).filter((d) => d.new !== null || d.old !== null);

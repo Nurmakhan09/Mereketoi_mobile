@@ -6,38 +6,28 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Quicksand_400Regular,
-  Quicksand_500Medium,
-  Quicksand_600SemiBold,
-  Quicksand_700Bold,
-} from '@expo-google-fonts/quicksand';
+  Nunito_400Regular,
+  Nunito_500Medium,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+} from '@expo-google-fonts/nunito';
 import 'react-native-reanimated';
 
 import { AppGate } from '@/components/AppGate';
-import { BackButton } from '@/components/BackButton';
 import { Colors } from '@/constants/theme';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-/** Shared header for pushed screens: blank title + a label-less navy back chevron. */
-const pushedHeader = {
-  headerShown: true,
-  title: '',
-  headerShadowVisible: false,
-  headerStyle: { backgroundColor: Colors.background },
-  headerLeft: () => <BackButton />,
-} as const;
-
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Quicksand_400Regular,
-    Quicksand_500Medium,
-    Quicksand_600SemiBold,
-    Quicksand_700Bold,
+    Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
   });
 
   useEffect(() => {
@@ -61,26 +51,13 @@ export default function RootLayout() {
               animation: 'slide_from_right',
             }}
           >
+            {/* All content pages now live INSIDE (tabs) — per-tab stacks + the shared
+                route group — so the bottom bar shows on every page. Only true modals
+                (auth, nickname) and the reset flow stay outside the tab navigator. */}
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'fade' }} />
             <Stack.Screen name="forgot-password" options={{ animation: 'fade' }} />
-            <Stack.Screen name="listing/[uuid]/index" options={pushedHeader} />
-            <Stack.Screen name="listing/[uuid]/calendar" options={pushedHeader} />
-            <Stack.Screen name="my/[uuid]/edit" options={pushedHeader} />
-            <Stack.Screen name="my/[uuid]/publish" options={pushedHeader} />
-            <Stack.Screen name="my/[uuid]/calendar" options={pushedHeader} />
-            <Stack.Screen name="calendars" options={pushedHeader} />
-            <Stack.Screen name="calendar-day" />
             <Stack.Screen name="set-nickname" options={{ presentation: 'modal', animation: 'fade' }} />
-            <Stack.Screen name="favorites" options={pushedHeader} />
-            <Stack.Screen name="toi/index" options={pushedHeader} />
-            <Stack.Screen name="toi/history" options={pushedHeader} />
-            <Stack.Screen name="invite/[token]" options={pushedHeader} />
-            <Stack.Screen name="settings" options={pushedHeader} />
-            <Stack.Screen name="notifications" options={pushedHeader} />
-            <Stack.Screen name="notifications-preferences" options={pushedHeader} />
-            <Stack.Screen name="page/[slug]" options={pushedHeader} />
-            <Stack.Screen name="contact" options={pushedHeader} />
           </Stack>
           <StatusBar style="dark" />
         </AppGate>

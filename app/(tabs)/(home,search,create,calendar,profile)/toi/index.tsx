@@ -16,6 +16,7 @@ import { useI18n, localized } from '@/locales';
 import { fetchWeddingPlan, saveWeddingPlan } from '@/services/api/weddingPlan';
 import { cancelBooking, confirmChange, rejectChange, requestChange } from '@/services/api/bookings';
 import { formatPrice } from '@/utils/format';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { WeddingPlan, WeddingPlanResponse, BookingCard } from '@/types';
 
 /**
@@ -40,6 +41,7 @@ function maskTime(v: string): string {
 export default function ToiScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
+  const tabBarPad = useTabBarPadding();
   const { isAuthed, requireAuth } = useRequireAuth();
   const params = useLocalSearchParams<{ step?: string }>();
 
@@ -223,8 +225,8 @@ export default function ToiScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom nav */}
-      <View style={styles.bottomNav}>
+      {/* Bottom nav — padded so it sits above the floating tab bar on iOS. */}
+      <View style={[styles.bottomNav, tabBarPad ? { paddingBottom: Spacing.base + tabBarPad } : null]}>
         {cur > 0 ? (
           <Button title={t.toiStepBack} variant="outline" onPress={() => setStep(cur - 1)} style={styles.navBtn} />
         ) : <View style={styles.navBtn} />}

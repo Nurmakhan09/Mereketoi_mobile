@@ -39,7 +39,14 @@ export function ListingCard({ item, onPress, favorited, onToggleFavorite }: Prop
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.imageWrap}>
         {img ? (
-          <Image source={{ uri: img }} style={styles.image} contentFit="contain" transition={150} />
+          <Image
+            source={{ uri: img }}
+            style={styles.image}
+            contentFit="contain"
+            transition={150}
+            cachePolicy="memory-disk"
+            recyclingKey={item.uuid}
+          />
         ) : (
           <View style={[styles.image, styles.imagePlaceholder]}>
             <Ionicons name="image-outline" size={28} color={Colors.textFaint} />

@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { View, StyleSheet, ScrollView, ViewStyle, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 
 interface Props {
   children: ReactNode;
@@ -13,6 +14,12 @@ interface Props {
   onRefresh?: () => void;
   /** Apply top safe-area inset (for screens without a header). */
   edgeTop?: boolean;
+  /**
+   * Add bottom padding so content clears the translucent tab bar (iOS floats the
+   * bar over the content). Turn OFF for screens whose own sticky footer already
+   * handles the clearance (e.g. the listing detail CTA).
+   */
+  tabBarAware?: boolean;
 }
 
 /** Page container: background + bottom safe-area + optional scroll/refresh. */
@@ -25,8 +32,11 @@ export function Screen({
   refreshing,
   onRefresh,
   edgeTop = false,
+  tabBarAware = true,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const tabBarPad = useTabBarPadding();
+  const bottomPad = tabBarAware ? tabBarPad : 0;
   const base: ViewStyle = {
     flex: 1,
     backgroundColor: Colors.background,
@@ -39,7 +49,7 @@ export function Screen({
         <ScrollView
           contentContainerStyle={[
             padded && styles.padded,
-            { paddingBottom: Spacing.xxxl },
+            { paddingBottom: Spacing.xxxl + bottomPad },
             contentStyle,
           ]}
           keyboardShouldPersistTaps="handled"
@@ -56,7 +66,11 @@ export function Screen({
     );
   }
 
-  return <View style={[base, padded && styles.padded, style]}>{children}</View>;
+  return (
+    <View style={[base, padded && styles.padded, bottomPad ? { paddingBottom: bottomPad } : null, style]}>
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

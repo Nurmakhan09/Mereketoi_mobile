@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, Pressable } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/Text';
 import { Pill } from '@/components/ui/Pill';
@@ -15,6 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { fetchOwnerCalendar } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { OwnerCalendar, DayStatus } from '@/types';
 
 const MONTHS_KK = ['Қаңтар', 'Ақпан', 'Наурыз', 'Сәуір', 'Мамыр', 'Маусым', 'Шілде', 'Тамыз', 'Қыркүйек', 'Қазан', 'Қараша', 'Желтоқсан'];
@@ -79,7 +79,7 @@ function buildRows(
  */
 export default function CalendarTab() {
   const { t, locale } = useI18n();
-  const insets = useSafeAreaInsets();
+  const tabBarPad = useTabBarPadding();
   const status = useAuthStore((s) => s.status);
 
   const storeUuid = useMyListingStore((s) => s.uuid);
@@ -133,9 +133,10 @@ export default function CalendarTab() {
 
   if (status !== 'authed') return <GuestGate returnTo="/calendar" />;
 
+  // The page title now lives in the native header (small, centered, dark — set in
+  // (calendar)/_layout.tsx), matching Параметрлер/Таңдаулы/Хабарламалар.
   const header = (
-    <View style={{ paddingTop: insets.top + Spacing.base }}>
-      <Text variant="h1" color={Colors.text} style={styles.heading}>{t.calendarTitle}</Text>
+    <View style={{ paddingTop: Spacing.sm }}>
       <Text variant="small" color={Colors.textMuted} style={styles.intro}>{t.calNotebookIntro}</Text>
       {data?.is_venue && data.halls.length ? (
         <View style={styles.halls}>
@@ -165,9 +166,6 @@ export default function CalendarTab() {
   if (!hasPublished) {
     return (
       <View style={styles.fill}>
-        <View style={{ paddingTop: insets.top + Spacing.base }}>
-          <Text variant="h1" color={Colors.text} style={styles.heading}>{t.calendarTitle}</Text>
-        </View>
         <EmptyState
           icon="calendar-outline"
           title={t.calNeedsListingTitle}
@@ -190,7 +188,7 @@ export default function CalendarTab() {
       style={styles.fill}
       data={rows}
       keyExtractor={(r) => r.date}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
       ListHeaderComponent={header}
       renderItem={({ item }) => {
         const st = STATUS_STYLE[item.status];
@@ -239,7 +237,6 @@ export default function CalendarTab() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
   list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
-  heading: { marginBottom: Spacing.xs },
   intro: { marginBottom: Spacing.base },
   halls: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   row: {

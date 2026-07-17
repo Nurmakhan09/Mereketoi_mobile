@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { fetchFavorites } from '@/services/api/favorites';
 import { GuestGate } from '@/components/GuestGate';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { ListingCard as ListingCardType } from '@/types';
 
 /**
@@ -19,6 +20,7 @@ import { ListingCard as ListingCardType } from '@/types';
 export default function FavoritesScreen() {
   const { t } = useI18n();
   const navigation = useNavigation();
+  const tabBarPad = useTabBarPadding();
   const status = useAuthStore((s) => s.status);
   const setAll = useFavoritesStore((s) => s.setAll);
   const toggleFav = useFavoritesStore((s) => s.toggle);
@@ -67,7 +69,7 @@ export default function FavoritesScreen() {
         keyExtractor={(it) => it.uuid}
         numColumns={2}
         columnWrapperStyle={styles.col}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
         renderItem={({ item }) => (
           <View style={styles.cardCell}>
             <ListingCard

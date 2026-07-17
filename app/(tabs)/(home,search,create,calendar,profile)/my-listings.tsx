@@ -3,7 +3,6 @@ import { View, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/Text';
 import { Logo } from '@/components/Logo';
@@ -25,6 +24,7 @@ import {
 } from '@/services/api/listings';
 import { imageUrl } from '@/utils/imageUrl';
 import { formatDate, formatPrice } from '@/utils/format';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { OwnerListing, OwnerListingDetail, OwnerStats } from '@/types';
 
 /**
@@ -35,7 +35,7 @@ import { OwnerListing, OwnerListingDetail, OwnerStats } from '@/types';
  */
 export default function MyListingScreen() {
   const { t, locale } = useI18n();
-  const insets = useSafeAreaInsets();
+  const tabBarPad = useTabBarPadding();
   const status = useAuthStore((s) => s.status);
   const refreshMine = useMyListingStore((s) => s.refresh);
 
@@ -93,7 +93,7 @@ export default function MyListingScreen() {
 
   if (loading && !listing) {
     return (
-      <View style={[styles.fill, { paddingTop: insets.top + Spacing.base }]}>
+      <View style={[styles.fill, { paddingTop: Spacing.base }]}>
         <View style={styles.titleRow}><Logo size="sm" /></View>
         <Loading />
       </View>
@@ -106,7 +106,13 @@ export default function MyListingScreen() {
   const hasContent = !!listing && ((listing.title ?? '').trim() !== '' || imageCount > 0);
 
   return (
-    <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.base }]}>
+    <ScrollView
+      style={styles.fill}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: Spacing.base, paddingBottom: Spacing.xxxl + tabBarPad },
+      ]}
+    >
       <View style={styles.titleRow}><Logo size="sm" /></View>
       <Text variant="h1" color={Colors.text} style={styles.heading}>{t.myListing}</Text>
 
@@ -117,7 +123,12 @@ export default function MyListingScreen() {
           icon="cube-outline"
           title={t.emptyMyListings}
           actionLabel={t.newListing}
-          onAction={() => router.push('/create')}
+          // A blank draft already exists → open ITS editor directly. Going through
+          // /create bounced right back here (create saw the draft → my-listings →
+          // «Жаңа хабарландыру» → /create → …), so publishing was impossible.
+          onAction={() =>
+            listing ? router.push(`/my/${listing.uuid}/edit`) : router.push('/create')
+          }
         />
       ) : listing ? (
         <>

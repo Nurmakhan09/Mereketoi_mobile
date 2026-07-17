@@ -20,6 +20,7 @@ import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { categoryIcon } from '@/utils/categoryIcon';
 import { ListingCard as ListingCardType, SortOption, PriceType } from '@/types';
 
@@ -74,6 +75,7 @@ function SelectorButton({
 export default function SearchScreen() {
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
+  const tabBarPad = useTabBarPadding();
   const params = useLocalSearchParams<{ category?: string; city?: string; q?: string }>();
   const { categories, cities } = useTaxonomy();
   const { isAuthed, requireAuth } = useRequireAuth();
@@ -345,6 +347,24 @@ export default function SearchScreen() {
           <Button title={t.applyFilters} onPress={() => setFilterOpen(false)} style={styles.flex1} />
         </View>
       </ScrollView>
+
+      {/* The city & date pickers MUST be nested inside this sheet's Modal: iOS
+          silently refuses to present a second sibling <Modal> while one is open,
+          which made «Нақты күн таңдау» / «Өңір таңдау» dead buttons. Nested
+          modals present from the already-open sheet, so they work. */}
+      <CityPickerSheet
+        visible={cityOpen}
+        onClose={() => setCityOpen(false)}
+        items={cityItems}
+        value={city}
+        onSelect={setCity}
+      />
+      <DatePickerSheet
+        visible={dateOpen}
+        onClose={() => setDateOpen(false)}
+        value={date}
+        onSelect={setDate}
+      />
     </Sheet>
   );
 
@@ -361,7 +381,7 @@ export default function SearchScreen() {
         keyExtractor={(it) => it.uuid}
         numColumns={2}
         columnWrapperStyle={styles.col}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Spacing.xxxl + tabBarPad }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
         onEndReached={loadMore}
@@ -390,19 +410,6 @@ export default function SearchScreen() {
         }
       />
       {filterSheet}
-      <CityPickerSheet
-        visible={cityOpen}
-        onClose={() => setCityOpen(false)}
-        items={cityItems}
-        value={city}
-        onSelect={setCity}
-      />
-      <DatePickerSheet
-        visible={dateOpen}
-        onClose={() => setDateOpen(false)}
-        value={date}
-        onSelect={setDate}
-      />
     </View>
   );
 }

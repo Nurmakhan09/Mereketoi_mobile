@@ -38,7 +38,7 @@ interface Cell {
 /**
  * Dependency-free month-grid date picker in a bottom sheet. minDate = today (past
  * days are disabled), navigable forward up to +24 months. Matches the in-app
- * calendar look (navy selection, Quicksand type) — no extra native module.
+ * calendar look (navy selection, Nunito type) — no extra native module.
  */
 export function DatePickerSheet({ visible, onClose, value, onSelect }: Props) {
   const { t, locale } = useI18n();

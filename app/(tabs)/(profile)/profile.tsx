@@ -16,10 +16,12 @@ import { Locale } from '@/stores/localeStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { fetchUnreadCount } from '@/services/api/notifications';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
+import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 
 export default function ProfileScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  const tabBarPad = useTabBarPadding();
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -58,13 +60,19 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.fill} contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.lg }]}>
+    <ScrollView
+      style={styles.fill}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + Spacing.lg, paddingBottom: Spacing.xxxl + tabBarPad },
+      ]}
+    >
       {/* Brand logo header */}
       <View style={styles.brandTop}>
         <Logo size="md" />
       </View>
-      {/* Top bar (authed) — bordered round corner buttons,
-          notification bell (LEFT, red unread badge) · history (RIGHT). */}
+      {/* Top bar (authed) — notification bell with the red unread badge.
+          (The history corner button was removed per owner request 2026-07-17.) */}
       {isAuthed ? (
         <View style={styles.topBar}>
           <Pressable onPress={() => router.push('/notifications')} hitSlop={6} style={styles.corner}>
@@ -74,9 +82,6 @@ export default function ProfileScreen() {
                 <Text variant="xsmall" color={Colors.white} style={styles.cornerBadgeTxt}>{unread > 9 ? '9+' : unread}</Text>
               </View>
             ) : null}
-          </Pressable>
-          <Pressable onPress={() => router.push('/toi/history')} hitSlop={6} style={styles.corner}>
-            <Ionicons name="time-outline" size={22} color={Colors.text} />
           </Pressable>
         </View>
       ) : null}
@@ -115,12 +120,13 @@ export default function ProfileScreen() {
         <MenuItem icon="sparkles-outline" label={t.menuToi} onPress={() => requireAuth(() => router.push('/toi'), '/toi')} last />
       </Card>
 
-      {/* Account menu (authed) */}
+      {/* Account menu (authed). «Өзгерістер тарихы» and «Құпия сөзді ұмыттыңыз ба?»
+          were removed per owner request 2026-07-17 — password reset lives ONLY in
+          Параметрлер (settings.tsx keeps its forgot-password link). */}
       {isAuthed ? (
         <Card style={styles.menu} padded={false}>
           <MenuItem icon="albums-outline" label={t.menuMyListings} onPress={() => router.push('/my-listings')} />
-          <MenuItem icon="calendar-outline" label={t.calendarTitle} onPress={() => router.push('/calendar')} />
-          <MenuItem icon="time-outline" label={t.historyTitle} onPress={() => router.push('/toi/history')} last />
+          <MenuItem icon="calendar-outline" label={t.calendarTitle} onPress={() => router.push('/calendar')} last />
         </Card>
       ) : null}
 
@@ -129,8 +135,7 @@ export default function ProfileScreen() {
         <Card style={styles.menu} padded={false}>
           <MenuItem icon="heart-outline" label={t.tabFavorites} onPress={() => router.push('/favorites')} />
           <MenuItem icon="notifications-outline" label={t.notificationsTitle} badge={unread} onPress={() => router.push('/notifications')} />
-          <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} />
-          <MenuItem icon="lock-closed-outline" label={t.forgotLink} onPress={() => router.push('/forgot-password')} last />
+          <MenuItem icon="settings-outline" label={t.menuSettings} onPress={() => router.push('/settings')} last />
         </Card>
       ) : null}
 

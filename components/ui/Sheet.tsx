@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Modal, View, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { Text } from './Text';
@@ -11,11 +12,19 @@ interface Props {
   children: ReactNode;
 }
 
-/** Bottom sheet: dim overlay + rounded card sliding from the bottom. */
+/** Bottom sheet: BLURRED backdrop (owner request 2026-07-17 — «артқы фоны бұлдыр
+ *  болсын», not just dark) + rounded card sliding from the bottom. */
 export function Sheet({ visible, onClose, title, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <BlurView
+        intensity={35}
+        tint="dark"
+        // Real blur on Android too (default there is a plain translucent view).
+        experimentalBlurMethod="dimezisBlurView"
+        style={StyleSheet.absoluteFill}
+      />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -40,7 +49,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.45)',
+    // Light veil on top of the blur — keeps the sheet readable without going dark.
+    backgroundColor: 'rgba(15,23,42,0.18)',
     justifyContent: 'flex-end',
   },
   sheet: {

@@ -16,7 +16,10 @@ export function useReloadOnTabPress(reload: () => void): void {
   ref.current = reload;
 
   useEffect(() => {
-    const unsub = navigation.addListener('tabPress' as never, (() => ref.current()) as never);
+    // Tab screens now sit inside a per-tab Stack, so `tabPress` is emitted on the
+    // PARENT Tabs route — subscribe there (fall back to self if already a tab).
+    const target = navigation.getParent() ?? navigation;
+    const unsub = target.addListener('tabPress' as never, (() => ref.current()) as never);
     return unsub;
   }, [navigation]);
 }

@@ -10,7 +10,7 @@ interface Props extends TextProps {
   weight?: TextStyle['fontWeight'];
 }
 
-/** Themed text using the Quicksand type scale. */
+/** Themed text using the Nunito type scale. */
 export function Text({ variant = 'body', color, center, style, children, ...rest }: Props) {
   return (
     <RNText
