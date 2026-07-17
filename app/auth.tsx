@@ -13,28 +13,20 @@ import { FormField } from '@/components/ui/FormField';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
-import {
-  login as apiLogin,
-  register as apiRegister,
-  sendRegisterCode,
-  verifyRegisterCode,
-  fetchMe,
-  oauthSignIn,
-} from '@/services/api/auth';
+import { login as apiLogin, register as apiRegister, fetchMe, oauthSignIn } from '@/services/api/auth';
 import { runBrowserAuth } from '@/features/auth/browserAuth';
 import { setItem, StorageKeys } from '@/services/storage';
 import { formatPhoneInput } from '@/utils/format';
 import { ApiError } from '@/types/api';
 
 type Mode = 'login' | 'register';
-/** Register wizard (owner request 2026-07-17 — strict order):
- *  1 = email (or phone) → «Код жіберу» · 2 = enter + verify the emailed code ·
- *  3 = name + password → «Тіркелу». Phone logins skip step 2 (no email to verify). */
-type RegStep = 1 | 2 | 3;
+/** Register wizard (owner decision 2026-07-17 evening — NO email code step):
+ *  1 = email (or phone) → «Келесі» · 2 = name + password → «Тіркелу». */
+type RegStep = 1 | 2;
 
 /** Auth screen — native login/register form (works in Expo Go) + Google via browser. */
 export default function AuthScreen() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const setSession = useAuthStore((s) => s.setSession);
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
@@ -42,7 +34,6 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>('login');
   const [regStep, setRegStep] = useState<RegStep>(1);
   const [loginVal, setLoginVal] = useState('');
-  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -100,7 +91,6 @@ export default function AuthScreen() {
   const switchMode = (m: Mode) => {
     setMode(m);
     setRegStep(1);
-    setCode('');
     setErrors({});
   };
 
@@ -115,43 +105,7 @@ export default function AuthScreen() {
 
   // ── Register wizard steps ──────────────────────────────────────────────────
 
-  // Step 1 (email path) — send the verification code. The backend rejects an
-  // invalid / already-registered email here, so a bad email never advances.
-  const onSendCode = async () => {
-    setBusy('form');
-    setErrors({});
-    try {
-      await sendRegisterCode(trimmedLogin, locale);
-      setRegStep(2);
-      Alert.alert(t.appName, t.registerCodeSent);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  // Step 2 — verify the code on the server (without consuming it) before the
-  // name+password step opens.
-  const onVerifyCode = async () => {
-    if (!/^\d{6}$/.test(code.trim())) {
-      setErrors({ code: t.codeRequired });
-      return;
-    }
-    setBusy('form');
-    setErrors({});
-    try {
-      await verifyRegisterCode(trimmedLogin, code.trim());
-      setRegStep(3);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  // Step 3 — name + password, then create the account (the code is consumed
-  // server-side here; email ownership is already proven).
+  // Step 2 — name + password, then create the account.
   const onRegister = async () => {
     const e: Record<string, string> = {};
     const nm = name.trim();
@@ -168,17 +122,12 @@ export default function AuthScreen() {
     setBusy('form');
     setErrors({});
     try {
-      const res = await apiRegister({
-        login: trimmedLogin,
-        password,
-        name: nm,
-        code: isEmailLogin ? code.trim() : undefined,
-      });
+      const res = await apiRegister({ login: trimmedLogin, password, name: nm });
       await setSession(res.token, res.user);
       afterAuth();
     } catch (err) {
-      // Code expired while the form was being filled → back to the code step.
-      if (err instanceof ApiError && err.fieldErrors?.code) setRegStep(2);
+      // A login-field error (e.g. email taken) belongs to step 1.
+      if (err instanceof ApiError && err.fieldErrors?.login) setRegStep(1);
       showApiError(err);
     } finally {
       setBusy(null);
@@ -224,25 +173,15 @@ export default function AuthScreen() {
         setErrors(eObj);
         return;
       }
-      if (isEmailLogin) return void onSendCode();
-      setRegStep(3); // phone registration: no email code to verify
+      setRegStep(2); // straight to name + password (no code step — owner decision)
       setErrors({});
       return;
     }
-    if (regStep === 2) return void onVerifyCode();
     return void onRegister();
   };
 
   const submitTitle =
-    mode === 'login'
-      ? t.loginAction
-      : regStep === 1
-        ? trimmedLogin && !isEmailLogin
-          ? t.next
-          : t.forgotSendCode
-        : regStep === 2
-          ? t.forgotVerify
-          : t.registerAction;
+    mode === 'login' ? t.loginAction : regStep === 1 ? t.next : t.registerAction;
 
   return (
     <View style={styles.fill}>
@@ -267,7 +206,7 @@ export default function AuthScreen() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Login mode + register step 1: the email/phone field.
-            Register steps 2–3: show the chosen login with a change link instead. */}
+            Register step 2: show the chosen login with a change link instead. */}
         {mode === 'login' || regStep === 1 ? (
           <FormField
             label={t.loginField}
@@ -286,7 +225,6 @@ export default function AuthScreen() {
             <Pressable
               onPress={() => {
                 setRegStep(1);
-                setCode('');
                 setErrors({});
               }}
               hitSlop={6}
@@ -296,28 +234,8 @@ export default function AuthScreen() {
           </View>
         )}
 
-        {/* Register step 2: the emailed verification code */}
+        {/* Register step 2: name + password */}
         {mode === 'register' && regStep === 2 ? (
-          <>
-            <FormField
-              label={t.forgotCodeLabel}
-              placeholder={t.forgotCodePlaceholder}
-              hint={t.registerCodeSent}
-              keyboardType="number-pad"
-              maxLength={6}
-              value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, ''))}
-              error={errors.code}
-              autoFocus
-            />
-            <Pressable onPress={busy === null ? onSendCode : undefined} hitSlop={6} style={styles.resendLink}>
-              <Text variant="small" color={Colors.primary}>{t.resendCode}</Text>
-            </Pressable>
-          </>
-        ) : null}
-
-        {/* Register step 3: name + password (email is verified by now) */}
-        {mode === 'register' && regStep === 3 ? (
           <>
             <FormField
               label={t.nameField}
@@ -521,7 +439,6 @@ const styles = StyleSheet.create({
   },
   loginSummaryTxt: { flex: 1, fontWeight: '600' },
   forgotLink: { alignSelf: 'flex-end', marginTop: Spacing.sm },
-  resendLink: { alignSelf: 'flex-end', marginBottom: Spacing.sm },
   submit: { marginTop: Spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.lg },
   line: { flex: 1, height: 1, backgroundColor: Colors.border },

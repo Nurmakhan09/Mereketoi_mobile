@@ -59,7 +59,8 @@ export default function RootLayout() {
                 route group — so the bottom bar shows on every page. Only true modals
                 (auth, nickname) and the reset flow stay outside the tab navigator. */}
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'fade' }} />
+            {/* Auth opens as a bottom-up modal slide (owner request 2026-07-17). */}
+            <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="forgot-password" options={{ animation: 'fade' }} />
             <Stack.Screen name="set-nickname" options={{ presentation: 'modal', animation: 'fade' }} />
           </Stack>
