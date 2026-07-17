@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, ScrollView } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/Text';

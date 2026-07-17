@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, Linking, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';

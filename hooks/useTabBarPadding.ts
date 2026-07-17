@@ -13,8 +13,18 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
  */
 export type TabBarMode = 'glass' | 'blur' | 'solid';
 
-export const TAB_BAR_MODE: TabBarMode =
-  Platform.OS === 'ios' ? (isLiquidGlassAvailable() ? 'glass' : 'blur') : 'solid';
+let cachedMode: TabBarMode | null = null;
+
+/**
+ * Resolved lazily on first use (memoized) instead of at module-eval time —
+ * keeps the expo-glass-effect native call OFF the cold-start module-load path.
+ */
+export function getTabBarMode(): TabBarMode {
+  if (cachedMode === null) {
+    cachedMode = Platform.OS === 'ios' ? (isLiquidGlassAvailable() ? 'glass' : 'blur') : 'solid';
+  }
+  return cachedMode;
+}
 
 /** Bar content height, excluding the bottom safe-area inset. */
 export const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 64 : 62;
@@ -32,7 +42,8 @@ export function useTabBarPadding(): number {
   const insets = useSafeAreaInsets();
   const inTabs = useContext(BottomTabBarHeightContext) != null;
   if (!inTabs) return 0;
-  if (TAB_BAR_MODE === 'glass') return GLASS_BOTTOM_GAP + insets.bottom + TAB_BAR_HEIGHT + 10;
-  if (TAB_BAR_MODE === 'blur') return TAB_BAR_HEIGHT + Math.max(insets.bottom, 8);
+  const mode = getTabBarMode();
+  if (mode === 'glass') return GLASS_BOTTOM_GAP + insets.bottom + TAB_BAR_HEIGHT + 10;
+  if (mode === 'blur') return TAB_BAR_HEIGHT + Math.max(insets.bottom, 8);
   return 0;
 }

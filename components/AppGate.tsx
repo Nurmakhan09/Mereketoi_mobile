@@ -16,6 +16,7 @@ import { usePushNotifications } from '@/features/notifications/usePushNotificati
 export function AppGate({ children }: { children: ReactNode }) {
   const [booted, setBooted] = useState(false);
   const loadConfig = useAppConfigStore((s) => s.load);
+  const hydrateConfig = useAppConfigStore((s) => s.hydrate);
   const config = useAppConfigStore((s) => s.config);
   const initLocale = useLocaleStore((s) => s.init);
   const bootstrap = useAuthStore((s) => s.bootstrap);
@@ -23,11 +24,16 @@ export function AppGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     registerAuthHandlers();
     (async () => {
-      await Promise.all([loadConfig(), initLocale()]);
-      await bootstrap(); // needs locale-independent; runs after config so 401 handler is set
+      // Cold-start path is LOCAL-first: cached config + locale (disk reads only).
+      // The fresh-config network fetch runs in the background AFTER boot — the
+      // maintenance/force-update gates below read zustand state, so a blocker
+      // still appears reactively the moment fresh config lands.
+      await Promise.all([hydrateConfig(), initLocale()]);
+      await bootstrap(); // 4s-capped /me; network failure keeps the cached session
       setBooted(true);
+      void loadConfig(); // background refresh (persists for the next cold start)
     })();
-  }, [loadConfig, initLocale, bootstrap]);
+  }, [hydrateConfig, loadConfig, initLocale, bootstrap]);
 
   // Native push: register the device once authed; deep-link on tap (shared mapper).
   usePushNotifications(booted);

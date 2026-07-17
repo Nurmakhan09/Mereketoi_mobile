@@ -24,3 +24,10 @@ export const APP_VERSION = '1.0.1';
 
 /** Request timeout (ms). */
 export const REQUEST_TIMEOUT = 20000;
+
+/**
+ * Timeout for BOOT-path requests (app-config, /me). Cold start must never hang
+ * behind the shared 20s timeout — nobody waits 20s for an app to open; fail
+ * fast and continue on cached data instead.
+ */
+export const BOOT_REQUEST_TIMEOUT = 4000;

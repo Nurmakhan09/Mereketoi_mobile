@@ -6,6 +6,8 @@
 
 import { create } from 'zustand';
 import { User } from '@/types';
+import { ApiError } from '@/types/api';
+import { BOOT_REQUEST_TIMEOUT } from '@/constants/config';
 import { getItem, setItem, deleteItem, StorageKeys } from '@/services/storage';
 import { setUnauthorizedHandler } from '@/services/api/client';
 import { fetchMe, logout as apiLogout, deleteAccount as apiDeleteAccount } from '@/services/api/auth';
@@ -47,12 +49,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const cached = cachedRaw ? (JSON.parse(cachedRaw) as User) : null;
     set({ token, user: cached, status: cached ? 'authed' : 'loading' });
     try {
-      const user = await fetchMe();
+      // Boot-path: short timeout — a slow server must not stall cold start.
+      const user = await fetchMe({ timeout: BOOT_REQUEST_TIMEOUT });
       await setItem(StorageKeys.user, JSON.stringify(user));
       set({ status: 'authed', token, user });
-    } catch {
-      // Invalid/expired token (401 already cleared via handler) — ensure guest.
-      await get().clearSession();
+    } catch (e) {
+      // Only a REJECTED token ends the session. A network failure / timeout keeps
+      // the optimistic cached session (same philosophy as refreshUser) — otherwise
+      // a slow connection would log the user out at every cold start.
+      const status = e instanceof ApiError ? e.status : 0;
+      if (status === 401 || status === 403 || !cached) {
+        await get().clearSession();
+      }
     }
   },
 

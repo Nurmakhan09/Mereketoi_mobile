@@ -26,8 +26,8 @@ export function verifyRegisterCode(login: string, code: string) {
 }
 
 /** GET /me — refresh the current user (validates the token). */
-export function fetchMe() {
-  return apiGet<{ user: User }>(Endpoints.me).then((d) => d.user);
+export function fetchMe(opts?: { timeout?: number }) {
+  return apiGet<{ user: User }>(Endpoints.me, opts).then((d) => d.user);
 }
 
 /** POST /auth/oauth/{provider} — exchange a provider id-token for OUR token.

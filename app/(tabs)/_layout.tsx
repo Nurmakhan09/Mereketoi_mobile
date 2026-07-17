@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackActions } from '@react-navigation/native';
@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { useI18n } from '@/locales';
 import {
-  TAB_BAR_MODE,
+  getTabBarMode,
   TAB_BAR_HEIGHT,
   GLASS_SIDE_MARGIN,
   GLASS_BOTTOM_GAP,
@@ -45,6 +45,7 @@ export default function TabLayout() {
 
   const insets = useSafeAreaInsets();
   const bottomInset = insets.bottom;
+  const tabBarMode = getTabBarMode();
 
   const pendingBookings = useMyListingStore((s) => s.pendingBookings);
   const refreshMine = useMyListingStore((s) => s.refresh);
@@ -73,7 +74,7 @@ export default function TabLayout() {
   });
 
   const tabBarStyle =
-    TAB_BAR_MODE === 'glass'
+    tabBarMode === 'glass'
       ? {
           // iOS 26 Liquid Glass: floating pill, content scrolls beneath it.
           position: 'absolute' as const,
@@ -90,7 +91,7 @@ export default function TabLayout() {
           elevation: 0,
           shadowOpacity: 0,
         }
-      : TAB_BAR_MODE === 'blur'
+      : tabBarMode === 'blur'
         ? {
             // Older iOS: classic edge-to-edge translucent bar.
             position: 'absolute' as const,
@@ -119,9 +120,9 @@ export default function TabLayout() {
           };
 
   const tabBarBackground =
-    TAB_BAR_MODE === 'glass'
+    tabBarMode === 'glass'
       ? () => <GlassTabBarBackground />
-      : TAB_BAR_MODE === 'blur'
+      : tabBarMode === 'blur'
         ? () => (
             <BlurView
               tint={ActiveTheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
@@ -137,7 +138,7 @@ export default function TabLayout() {
         headerShown: false,
         // iOS: subtle native-style cross-fade between tab scenes (Android keeps
         // the platform's instant switch).
-        animation: TAB_BAR_MODE === 'solid' ? 'none' : 'fade',
+        animation: tabBarMode === 'solid' ? 'none' : 'fade',
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle,

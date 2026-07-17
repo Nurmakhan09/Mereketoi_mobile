@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { AppConfig } from '@/types';
 import { fetchAppConfig } from '@/services/api/appConfig';
+import { getItem, setItem, StorageKeys } from '@/services/storage';
 import { ActiveTheme, Colors, Palette } from '@/constants/theme';
 import { APP_VERSION } from '@/constants/config';
 
@@ -14,6 +15,9 @@ interface AppConfigState {
   config: AppConfig | null;
   loaded: boolean;
   error: boolean;
+  /** Apply the LAST persisted config instantly (local read, no network). */
+  hydrate: () => Promise<void>;
+  /** Fetch fresh config from the network (persists on success). */
   load: () => Promise<void>;
 }
 
@@ -53,20 +57,40 @@ function applyBrand(config: AppConfig): void {
   if (b.error) Colors.error = b.error;
 }
 
-export const useAppConfigStore = create<AppConfigState>((set) => ({
+export const useAppConfigStore = create<AppConfigState>((set, get) => ({
   config: null,
   loaded: false,
   error: false,
+
+  // Cold-start path: paint from the cached config immediately so boot never
+  // waits on the network. Fresh config (load) then updates state reactively —
+  // maintenance/force-update gates re-evaluate the moment it lands.
+  hydrate: async () => {
+    try {
+      const raw = await getItem(StorageKeys.appConfig);
+      if (!raw) return;
+      const config = JSON.parse(raw) as AppConfig;
+      applyBrand(config);
+      set({ config, loaded: true, error: false });
+    } catch {
+      // Corrupt cache → ignore; load() will refresh it.
+    }
+  },
 
   load: async () => {
     try {
       const config = await fetchAppConfig();
       applyBrand(config);
       set({ config, loaded: true, error: false });
+      // Best-effort persist for the next cold start's instant hydrate.
+      setItem(StorageKeys.appConfig, JSON.stringify(config)).catch(() => {});
     } catch {
-      // Offline / server error → fall back to bundled palette; don't block the app
-      // unless we explicitly need config (maintenance/force-update are best-effort).
-      Object.assign(Colors, Palette);
+      // Offline / server error: keep the hydrated cached config if we have one;
+      // otherwise fall back to the bundled palette. Never block the app —
+      // maintenance/force-update are best-effort gates.
+      if (!get().config) {
+        Object.assign(Colors, Palette);
+      }
       set({ loaded: true, error: true });
     }
   },

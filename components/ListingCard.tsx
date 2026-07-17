@@ -1,6 +1,6 @@
 import { View, Pressable, StyleSheet, Share } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors, Radius, Shadow, Spacing, Typography } from '@/constants/theme';
 import { Text } from './ui/Text';
 import { AvailabilityBadge } from './ui/Badge';

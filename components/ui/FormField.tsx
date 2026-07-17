@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { View, TextInput, TextInputProps, StyleSheet, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { Text } from './Text';
 

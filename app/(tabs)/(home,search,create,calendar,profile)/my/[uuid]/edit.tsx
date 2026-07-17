@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';

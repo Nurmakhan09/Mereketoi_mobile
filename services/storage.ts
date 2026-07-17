@@ -52,4 +52,6 @@ export const StorageKeys = {
   user: 'mk_user',
   locale: 'mk_locale',
   pushToken: 'mk_push_token',
+  /** Last successful GET /app-config payload — hydrated at boot (offline-first). */
+  appConfig: 'mk_app_config',
 } as const;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors, Spacing } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 import { Sheet } from '@/components/ui/Sheet';
