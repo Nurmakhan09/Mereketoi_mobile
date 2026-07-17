@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { Screen } from '@/components/ui/Screen';
@@ -34,6 +35,7 @@ type RegStep = 1 | 2 | 3;
 /** Auth screen — native login/register form (works in Expo Go) + Google via browser. */
 export default function AuthScreen() {
   const { t, locale } = useI18n();
+  const insets = useSafeAreaInsets();
   const setSession = useAuthStore((s) => s.setSession);
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
 
@@ -243,13 +245,8 @@ export default function AuthScreen() {
           : t.registerAction;
 
   return (
+    <View style={styles.fill}>
     <Screen scroll padded edgeTop>
-      <View style={styles.closeRow}>
-        <Pressable onPress={onClose} hitSlop={8} style={styles.close}>
-          <Ionicons name="close" size={26} color={Colors.textMuted} />
-        </Pressable>
-      </View>
-
       <View style={styles.hero}>
         <Logo size="lg" style={styles.heroLogo} />
         <Text variant="body" center color={Colors.textMuted}>
@@ -408,6 +405,18 @@ export default function AuthScreen() {
         style={appleAvailable ? styles.googleButton : undefined}
       />
     </Screen>
+
+      {/* ✕ — ALWAYS visible (owner 2026-07-17): floats over the scroll content. */}
+      <Pressable
+        onPress={onClose}
+        hitSlop={8}
+        style={[styles.closeFloat, { top: insets.top + Spacing.sm }]}
+        accessibilityRole="button"
+        accessibilityLabel={t.close}
+      >
+        <Ionicons name="close" size={24} color={Colors.textMuted} />
+      </Pressable>
+    </View>
   );
 
   // ── OAuth handlers (hoisted below JSX for readability) ─────────────────────
@@ -472,11 +481,21 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   appleButton: { backgroundColor: '#000000', borderColor: '#000000' },
   googleButton: { marginTop: Spacing.sm },
-  closeRow: { alignItems: 'flex-end' },
-  close: { padding: Spacing.xs },
-  hero: { alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xl },
+  closeFloat: {
+    position: 'absolute',
+    right: Spacing.base,
+    zIndex: 10,
+    width: 38,
+    height: 38,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hero: { alignItems: 'center', marginTop: Spacing.lg, marginBottom: Spacing.xl },
   heroLogo: { marginBottom: Spacing.sm },
   segment: {
     flexDirection: 'row',

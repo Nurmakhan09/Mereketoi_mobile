@@ -2,12 +2,16 @@ import { Stack } from 'expo-router';
 import { BackButton } from '@/components/BackButton';
 import { Colors } from '@/constants/theme';
 
-/** Shared header for pushed screens: blank title + a label-less navy back chevron. */
+/** Shared header for pushed screens: blank title + a label-less navy back chevron.
+ *  Title/tint colors are set explicitly so the header text stays WHITE in dark
+ *  mode (owner 2026-07-17) — Colors resolves per-theme at module eval. */
 const pushedHeader = {
   headerShown: true,
   title: '',
   headerShadowVisible: false,
   headerStyle: { backgroundColor: Colors.background },
+  headerTitleStyle: { color: Colors.textBody },
+  headerTintColor: Colors.textBody,
   headerLeft: () => <BackButton />,
 } as const;
 

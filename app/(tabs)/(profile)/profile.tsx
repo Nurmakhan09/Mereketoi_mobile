@@ -143,14 +143,6 @@ export default function ProfileScreen() {
       {/* Language */}
       <LangSwitch />
 
-      {/* Theme — available to GUESTS too (owner request 2026-07-17). */}
-      <Text variant="small" color={Colors.textMuted} style={styles.themeLabel}>
-        {t.themeTitle}
-      </Text>
-      <Card style={styles.menu} padded>
-        <ThemeSwitch showHint={false} />
-      </Card>
-
       {/* CMS links */}
       <Card style={styles.menu} padded={false}>
         <MenuItem icon="information-circle-outline" label={t.menuAbout} onPress={() => router.push('/page/about')} />
@@ -171,6 +163,14 @@ export default function ProfileScreen() {
           ) : null}
         </View>
       ) : null}
+
+      {/* Theme — VERY BOTTOM, compact (owner 2026-07-17); guests can use it too. */}
+      <View style={styles.themeWrap}>
+        <Text variant="xsmall" color={Colors.textMuted} center style={styles.themeLabel}>
+          {t.themeTitle}
+        </Text>
+        <ThemeSwitch compact showHint={false} />
+      </View>
     </ScrollView>
   );
 }
@@ -280,7 +280,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xs,
   },
   langLabel: {},
-  themeLabel: { marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs },
+  themeWrap: { marginTop: Spacing.xl },
+  themeLabel: { marginBottom: Spacing.sm },
   langSwitch: {
     flexDirection: 'row',
     borderWidth: 1,

@@ -16,6 +16,7 @@ export default function CalendarGroupLayout() {
         title: t.calendarTitle,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: Colors.background },
+        headerTitleStyle: { color: Colors.textBody },
       }}
     />
   );

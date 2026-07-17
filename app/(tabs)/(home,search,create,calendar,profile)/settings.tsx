@@ -115,15 +115,6 @@ export default function SettingsScreen() {
 
   return (
     <Screen scroll padded>
-      {/* Appearance / theme — «По умолчанию» (system) is the default. Applying
-          needs a JS reload so every static StyleSheet re-reads the palette. */}
-      <Text variant="h3" color={Colors.text} style={styles.section}>
-        {t.themeTitle}
-      </Text>
-      <Card padded>
-        <ThemeSwitch />
-      </Card>
-
       {/* Account */}
       <Text variant="h3" color={Colors.text} style={styles.section}>
         {t.account}
@@ -189,6 +180,14 @@ export default function SettingsScreen() {
           onPress={onDeleteAccount}
         />
       </Card>
+
+      {/* Theme — VERY BOTTOM, compact (owner 2026-07-17). */}
+      <View style={styles.themeWrap}>
+        <Text variant="xsmall" color={Colors.textMuted} center style={styles.themeLabel}>
+          {t.themeTitle}
+        </Text>
+        <ThemeSwitch compact showHint={false} />
+      </View>
     </Screen>
   );
 }
@@ -208,6 +207,8 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   section: { marginTop: Spacing.lg, marginBottom: Spacing.md },
+  themeWrap: { marginTop: Spacing.xl },
+  themeLabel: { marginBottom: Spacing.sm },
   forgotLink: { alignSelf: 'center', marginTop: Spacing.md, paddingVertical: 4 },
   dangerHint: { marginBottom: Spacing.md },
   row: { marginBottom: Spacing.md },

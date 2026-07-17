@@ -14,7 +14,14 @@ import { useI18n } from '@/locales';
  * the choice and re-launches the JS bundle so every static StyleSheet
  * re-evaluates with the new palette (see constants/theme.ts).
  */
-export function ThemeSwitch({ showHint = true }: { showHint?: boolean }) {
+export function ThemeSwitch({
+  showHint = true,
+  compact = false,
+}: {
+  showHint?: boolean;
+  /** Small centered pills (profile-bottom placement) instead of full-width segments. */
+  compact?: boolean;
+}) {
   const { t } = useI18n();
   const [pref, setPref] = useState<ThemePref>(bootThemePref);
   const [switching, setSwitching] = useState(false);
@@ -47,16 +54,23 @@ export function ThemeSwitch({ showHint = true }: { showHint?: boolean }) {
 
   return (
     <View>
-      <View style={styles.row}>
+      <View style={[styles.row, compact && styles.rowCompact]}>
         {options.map((o) => {
           const active = pref === o.value;
           return (
             <Pressable
               key={o.value}
               onPress={() => void onPick(o.value)}
-              style={[styles.opt, active && styles.optActive]}
+              style={[
+                compact ? styles.optCompact : styles.opt,
+                active && styles.optActive,
+              ]}
             >
-              <Text variant="small" color={active ? Colors.white : Colors.textBody} center>
+              <Text
+                variant={compact ? 'xsmall' : 'small'}
+                color={active ? Colors.white : Colors.textBody}
+                center
+              >
                 {o.label}
               </Text>
             </Pressable>
@@ -74,6 +88,16 @@ export function ThemeSwitch({ showHint = true }: { showHint?: boolean }) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: Spacing.sm },
+  rowCompact: { justifyContent: 'center', gap: Spacing.xs },
+  optCompact: {
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   opt: {
     flex: 1,
     paddingVertical: Spacing.md,
