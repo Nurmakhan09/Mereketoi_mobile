@@ -14,7 +14,8 @@ import {
 import 'react-native-reanimated';
 
 import { AppGate } from '@/components/AppGate';
-import { Colors } from '@/constants/theme';
+import { ActiveTheme, bootThemePref, Colors } from '@/constants/theme';
+import { useSystemThemeFollow } from '@/hooks/useSystemThemeFollow';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -35,6 +36,9 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded]);
+
+  // In «По умолчанию» (system) mode, follow live OS light/dark switches.
+  useSystemThemeFollow(bootThemePref);
 
   if (!fontsLoaded) {
     return null; // splash stays up
@@ -59,7 +63,7 @@ export default function RootLayout() {
             <Stack.Screen name="forgot-password" options={{ animation: 'fade' }} />
             <Stack.Screen name="set-nickname" options={{ presentation: 'modal', animation: 'fade' }} />
           </Stack>
-          <StatusBar style="dark" />
+          <StatusBar style={ActiveTheme === 'dark' ? 'light' : 'dark'} />
         </AppGate>
       </SafeAreaProvider>
     </GestureHandlerRootView>

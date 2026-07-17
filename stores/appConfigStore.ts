@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { AppConfig } from '@/types';
 import { fetchAppConfig } from '@/services/api/appConfig';
-import { Colors, Palette } from '@/constants/theme';
+import { ActiveTheme, Colors, Palette } from '@/constants/theme';
 import { APP_VERSION } from '@/constants/config';
 
 interface AppConfigState {
@@ -38,6 +38,9 @@ export function isForceUpdate(config: AppConfig | null): boolean {
 function applyBrand(config: AppConfig): void {
   const b = config.brand;
   if (!b) return;
+  // Brand overrides are authored for the LIGHT palette — never repaint the dark
+  // theme with them (they would re-lighten surfaces/text).
+  if (ActiveTheme === 'dark') return;
   if (b.primary) Colors.primary = b.primary;
   if (b.primary_hover) Colors.primaryHover = b.primary_hover;
   if (b.secondary) Colors.secondary = b.secondary;

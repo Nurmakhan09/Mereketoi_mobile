@@ -10,9 +10,10 @@
  * fonts/layout); see stores/appConfigStore.ts.
  */
 
-import { Platform } from 'react-native';
+import { Appearance, Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
-/** Brand + semantic palette. Single light theme (the web app is light-only). */
+/** Brand + semantic palette — LIGHT theme (the default). */
 export const Palette = {
   // Brand navy (primary)
   primary: '#000099',
@@ -52,8 +53,82 @@ export const Palette = {
 
 export type PaletteKey = keyof typeof Palette;
 
+/**
+ * DARK theme counterpart (owner request 2026-07-17) — mirrors the website's
+ * html[data-theme=dark] token set: deep navy-black surfaces, the brand blues
+ * lifted to lighter indigos so CTAs/links keep contrast.
+ */
+export const DarkPalette: Record<PaletteKey, string> = {
+  primary: '#6C6CFF',
+  primaryHover: '#8585FF',
+  primarySoft: '#1B1B3A',
+  primarySoft2: '#16162E',
+
+  secondary: '#9DB1E8',
+  secondaryHover: '#B6C5F0',
+  secondarySoft: '#17203A',
+
+  background: '#0B0F1A',
+  surface: '#121828',
+  surfaceMuted: '#1A2133',
+
+  text: '#A5B4FC',
+  textBody: '#E5E7EB',
+  textMuted: '#98A2B3',
+  textFaint: '#6C7689',
+
+  border: '#28324A',
+  borderStrong: '#394562',
+
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  favorite: '#FB7185',
+
+  white: '#FFFFFF',
+  black: '#0F172A',
+};
+
+/** Theme preference: 'system' (default — «По умолчанию») follows the OS. */
+export type ThemePref = 'system' | 'light' | 'dark';
+export const THEME_PREF_KEY = 'mk_theme';
+
+function readThemePrefSync(): ThemePref {
+  if (Platform.OS === 'web') return 'system';
+  try {
+    const v = SecureStore.getItem(THEME_PREF_KEY);
+    return v === 'light' || v === 'dark' ? v : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+/**
+ * Resolved ONCE, synchronously, at module-eval time — i.e. before ANY
+ * StyleSheet.create in the app reads Colors, so every static style gets the
+ * right palette. Changing the theme therefore requires a JS reload (settings
+ * does Updates.reloadAsync()); 'system' follows the OS scheme at each launch.
+ */
+export const bootThemePref: ThemePref = readThemePrefSync();
+export const ActiveTheme: 'light' | 'dark' =
+  bootThemePref === 'dark' || (bootThemePref === 'system' && Appearance.getColorScheme() === 'dark')
+    ? 'dark'
+    : 'light';
+
+// An explicit choice also drives the NATIVE appearance (alerts, keyboard,
+// glass materials) so system chrome matches the in-app theme.
+if (bootThemePref !== 'system') {
+  try {
+    Appearance.setColorScheme(bootThemePref);
+  } catch {
+    // best-effort
+  }
+}
+
 /** Mutable copy that app-config can override at runtime (colors only). */
-export const Colors: Record<PaletteKey, string> = { ...Palette };
+export const Colors: Record<PaletteKey, string> = {
+  ...(ActiveTheme === 'dark' ? DarkPalette : Palette),
+};
 
 /** 4px spacing grid (master-spec §1.2). */
 export const Spacing = {

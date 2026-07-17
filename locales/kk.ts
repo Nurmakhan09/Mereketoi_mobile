@@ -320,6 +320,12 @@ const kk = {
 
   // Settings
   settingsTitle: 'Параметрлер',
+  themeTitle: 'Сыртқы түрі',
+  themeSystem: 'Әдепкі',
+  themeLight: 'Жарық',
+  themeDark: 'Қараңғы',
+  themeHint: '«Әдепкі» — құрылғының жүйелік тақырыбына (жарық/қараңғы) өзі ереді.',
+  themeRestartHint: 'Тақырып сақталды. Толық қолдану үшін қосымшаны жауып, қайта ашыңыз.',
   account: 'Аккаунт',
   editName: 'Атын өзгерту',
   name: 'Аты',

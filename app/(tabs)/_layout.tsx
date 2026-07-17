@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackActions } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 
-import { Colors, Fonts, Radius } from '@/constants/theme';
+import { ActiveTheme, Colors, Fonts, Radius } from '@/constants/theme';
 import { AddTabIcon } from '@/components/AddTabIcon';
 import { GlassTabBarBackground } from '@/components/GlassTabBarBackground';
 import { useAuthStore } from '@/stores/authStore';
@@ -123,7 +123,11 @@ export default function TabLayout() {
       ? () => <GlassTabBarBackground />
       : TAB_BAR_MODE === 'blur'
         ? () => (
-            <BlurView tint="systemChromeMaterialLight" intensity={100} style={StyleSheet.absoluteFill} />
+            <BlurView
+              tint={ActiveTheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
+              intensity={100}
+              style={StyleSheet.absoluteFill}
+            />
           )
         : undefined;
 
