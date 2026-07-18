@@ -1,3 +1,5 @@
 {
-  "NSPhotoLibraryUsageDescription": "Access to your photo library is needed to add photos to your listing."
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "Access to your photo library is needed to add photos to your listing."
+  }
 }

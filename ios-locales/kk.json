@@ -1,3 +1,5 @@
 {
-  "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "Хабарландыруға фото қосу үшін галереяға рұқсат қажет."
+  }
 }

@@ -1,3 +1,5 @@
 {
-  "NSPhotoLibraryUsageDescription": "Доступ к галерее нужен, чтобы добавить фото к объявлению."
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "Доступ к галерее нужен, чтобы добавить фото к объявлению."
+  }
 }
