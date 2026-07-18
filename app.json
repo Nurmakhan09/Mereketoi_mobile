@@ -29,7 +29,7 @@
     "android": {
       "package": "mereketoi.kz",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 2,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#000099",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
