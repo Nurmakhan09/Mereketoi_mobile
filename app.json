@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",
-      "buildNumber": "16",
+      "buildNumber": "17",
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:mereketoi.kz"
@@ -35,7 +35,7 @@
     "android": {
       "package": "mereketoi.kz",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#000099",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
