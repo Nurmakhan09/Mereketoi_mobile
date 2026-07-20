@@ -7,6 +7,7 @@ import { Text } from '@/components/ui/Text';
 import { Pill } from '@/components/ui/Pill';
 import { Loading, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { GuestGate } from '@/components/GuestGate';
+import { GuideLink } from '@/components/GuideLink';
 import { CalendarHeader } from '@/features/calendar/CalendarHeader';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n } from '@/locales';
@@ -137,7 +138,10 @@ export default function CalendarTab() {
   // (calendar)/_layout.tsx), matching Параметрлер/Таңдаулы/Хабарламалар.
   const header = (
     <View style={{ paddingTop: Spacing.sm }}>
-      <Text variant="small" color={Colors.textMuted} style={styles.intro}>{t.calNotebookIntro}</Text>
+      <View style={styles.introRow}>
+        <Text variant="small" color={Colors.textMuted} style={styles.intro}>{t.calNotebookIntro}</Text>
+        <GuideLink anchor="calendar" label={t.guideCalendar} />
+      </View>
       {data?.is_venue && data.halls.length ? (
         <View style={styles.halls}>
           {data.halls.map((h, i) => (
@@ -237,7 +241,14 @@ export default function CalendarTab() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
   list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
-  intro: { marginBottom: Spacing.base },
+  introRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginBottom: Spacing.base,
+  },
+  intro: { flex: 1 },
   halls: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,

@@ -35,6 +35,8 @@ export interface ListingCard {
   is_free: boolean; // promo flag (free_until window), NOT availability
   today_status: TodayStatus;
   district: LocaleNamed | null;
+  category: LocaleNamed | null;
+  city: LocaleNamed | null;
   /** Instagram handle («@name») or full URL — public on every listing. */
   instagram?: string | null;
 }
@@ -48,9 +50,9 @@ export interface ListingImage {
 export interface ListingDetail extends ListingCard {
   full_description: string;
   images: ListingImage[];
-  category: LocaleNamed | null;
-  city: LocaleNamed | null;
   halls?: { name: string }[];
+  /** True when the logged-in viewer owns this listing — hides self-only actions. */
+  is_own?: boolean;
 }
 
 /** Owner list row (ownerShape) — owners see `status`. */
@@ -218,6 +220,10 @@ export interface CatalogFilters {
 export interface Suggestion {
   title: string;
   url: string;
+  type?: 'listing' | 'category' | 'city';
+  /** Present for category/city suggestions — lets the app set its local filter
+   *  directly instead of parsing `url` (the app doesn't navigate by URL). */
+  slug?: string;
 }
 
 /** Report reasons (master-spec §5.4). */

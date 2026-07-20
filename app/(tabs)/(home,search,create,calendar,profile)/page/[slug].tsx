@@ -1,21 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { SimpleHtml } from '@/components/SimpleHtml';
-import { HelpContent } from '@/components/HelpContent';
 import { Loading, ErrorState } from '@/components/ui/StateViews';
 import { Colors, Spacing } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
 import { fetchPage } from '@/services/api/pages';
 import { CmsPage } from '@/types';
+import { WEB_URL } from '@/constants/config';
 
-/** CMS page — renders the active locale's HTML content natively (no WebView). */
+/**
+ * CMS page. `help` is a real WebView onto the public site (owner request
+ * 2026-07-19: content there — including photos/videos — updates instantly,
+ * no app-store release needed). Everything else (about/terms/privacy/…) stays
+ * the lightweight native prose renderer — plain legal text gains nothing from
+ * a network-dependent WebView.
+ */
 export default function CmsPageScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, anchor } = useLocalSearchParams<{ slug: string; anchor?: string }>();
   const { t, locale } = useI18n();
   const navigation = useNavigation();
+
+  if (slug === 'help') {
+    return <HelpWebView anchor={anchor} />;
+  }
 
   const [page, setPage] = useState<CmsPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,17 +56,50 @@ export default function CmsPageScreen() {
 
   const content = localized(page, 'content', locale);
   const title = localized(page, 'title', locale);
-  // The help page stores structured JSON (guide + FAQ), not HTML — render it natively.
-  const isHelp = page.content_type === 'help' || page.slug === 'help';
 
   return (
     <Screen scroll padded>
       <Text variant="h1" color={Colors.text} style={styles.title}>
         {title}
       </Text>
-      {isHelp ? <HelpContent json={content} /> : <SimpleHtml html={content} />}
+      <SimpleHtml html={content} />
     </Screen>
   );
 }
 
-const styles = { title: { marginBottom: Spacing.base } } as const;
+function HelpWebView({ anchor }: { anchor?: string }) {
+  const { t, locale } = useI18n();
+  const navigation = useNavigation();
+  const [error, setError] = useState(false);
+  const url = `${WEB_URL}/${locale === 'ru' ? 'ru/' : ''}help?embed=1${anchor ? `#guide-${anchor}` : ''}`;
+
+  useEffect(() => {
+    navigation.setOptions({ title: t.menuHelp });
+  }, [navigation, t.menuHelp]);
+
+  if (error) {
+    return (
+      <Screen>
+        <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={() => setError(false)} />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen tabBarAware={false}>
+      <WebView
+        key={url}
+        source={{ uri: url }}
+        style={styles.fill}
+        startInLoadingState
+        renderLoading={() => <Loading />}
+        onError={() => setError(true)}
+      />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: { marginBottom: Spacing.base },
+  fill: { flex: 1 },
+});

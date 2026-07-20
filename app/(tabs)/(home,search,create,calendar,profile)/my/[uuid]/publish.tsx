@@ -85,7 +85,10 @@ export default function PublishPaymentScreen() {
       if (result === 'paid') {
         await refreshMine(); // keep the nav (calendar tab + badge) in sync
         await refreshUser(); // first publish upgrades the role to provider
-        Alert.alert(t.appName, isRenew ? t.listingRenewed : t.published);
+        const publishedMsg = pkg.duration_days
+          ? t.publishedWithDuration.replace('{days}', String(pkg.duration_days))
+          : t.published;
+        Alert.alert(t.appName, isRenew ? t.listingRenewed : publishedMsg);
         router.replace('/my-listings');
       } else if (result === 'failed') {
         Alert.alert(t.error, t.paymentFailed);
@@ -106,7 +109,7 @@ export default function PublishPaymentScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={Colors.primary} />
           <Text variant="small" color={Colors.textMuted} center style={styles.checkingTxt}>
-            {t.paymentChecking}
+            {t.loading}
           </Text>
         </View>
       </Screen>
@@ -143,6 +146,7 @@ export default function PublishPaymentScreen() {
         <View style={styles.list}>
           <Button
             title={isRenew ? t.freeRenewAction : t.freePublishAction}
+            variant={isRenew ? 'primary' : 'success'}
             icon="checkmark-circle-outline"
             loading={busyId !== null}
             disabled={busyId !== null}
@@ -173,6 +177,7 @@ export default function PublishPaymentScreen() {
               ) : null}
               <Button
                 title={t.packagesPay}
+                variant={isRenew ? 'primary' : 'success'}
                 icon="card-outline"
                 loading={busyId === pkg.id}
                 disabled={busyId !== null}

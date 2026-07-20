@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, Pressable, FlatList } from 'react-native';
+import { View, StyleSheet, Pressable, FlatList, Linking } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,12 +12,14 @@ import { Colors, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
 import { useTaxonomy } from '@/features/listings/useTaxonomy';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { useAppConfigStore } from '@/stores/appConfigStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
 import { fetchListings } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { categoryIcon } from '@/utils/categoryIcon';
 import { ListingCard as ListingCardType, Category } from '@/types';
+import { AppConfig } from '@/types/api';
 
 /** Home / Discovery — hero search, parent-category strip, recommended grid. */
 export default function HomeScreen() {
@@ -25,6 +27,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const tabBarPad = useTabBarPadding();
   const { categories, error: taxoError } = useTaxonomy();
+  const banner = useAppConfigStore((s) => s.config?.home_banner);
   const { isAuthed, requireAuth } = useRequireAuth();
   const favoriteIds = useFavoritesStore((s) => s.ids);
   const toggleFav = useFavoritesStore((s) => s.toggle);
@@ -100,6 +103,10 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {/* Server-driven promo block (Admin → Басты бет банері) — off by default,
+          appears instantly for every installed app once an admin turns it on. */}
+      {banner?.enabled ? <HomeBanner banner={banner} locale={locale} /> : null}
+
       {/* Recommended heading — slightly smaller than h2 + auto-shrink so the full
           «Ұсынылған хабарландырулар» always fits on one line next to «Барлығын көру». */}
       <View style={styles.sectionRow}>
@@ -161,6 +168,40 @@ export default function HomeScreen() {
   );
 }
 
+function HomeBanner({
+  banner,
+  locale,
+}: {
+  banner: NonNullable<AppConfig['home_banner']>;
+  locale: string;
+}) {
+  const title = (locale === 'ru' ? banner.title_ru : banner.title_kk) || banner.title_kk || banner.title_ru;
+  const subtitle =
+    (locale === 'ru' ? banner.subtitle_ru : banner.subtitle_kk) || banner.subtitle_kk || banner.subtitle_ru;
+  if (!title && !subtitle) return null;
+
+  const onPress = banner.link_url ? () => Linking.openURL(banner.link_url!).catch(() => {}) : undefined;
+
+  return (
+    <Pressable
+      style={[styles.banner, { backgroundColor: banner.bg_color || Colors.primary }]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      {title ? (
+        <Text variant="h3" color={Colors.white} style={styles.bannerTitle}>
+          {title}
+        </Text>
+      ) : null}
+      {subtitle ? (
+        <Text variant="small" color={Colors.white} style={styles.bannerSubtitle}>
+          {subtitle}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
 function CategoryBubble({
   category,
   label,
@@ -209,6 +250,14 @@ const styles = StyleSheet.create({
   },
   searchText: { marginLeft: Spacing.sm },
   section: { paddingHorizontal: Spacing.base, marginTop: Spacing.lg },
+  banner: {
+    marginHorizontal: Spacing.base,
+    marginTop: Spacing.lg,
+    padding: Spacing.lg,
+    borderRadius: Radius.md,
+  },
+  bannerTitle: { fontWeight: '700' },
+  bannerSubtitle: { marginTop: 4, opacity: 0.9 },
   sectionRow: {
     paddingHorizontal: Spacing.base,
     marginTop: Spacing.lg,

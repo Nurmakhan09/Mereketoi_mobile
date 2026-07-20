@@ -18,11 +18,11 @@ import { useI18n, localized } from '@/locales';
 import { useTaxonomy } from '@/features/listings/useTaxonomy';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useRequireAuth } from '@/features/auth/useRequireAuth';
-import { fetchListings } from '@/services/api/listings';
+import { fetchListings, suggestListings } from '@/services/api/listings';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 import { categoryIcon } from '@/utils/categoryIcon';
-import { ListingCard as ListingCardType, SortOption, PriceType } from '@/types';
+import { ListingCard as ListingCardType, SortOption, PriceType, Suggestion } from '@/types';
 
 const SORTS: SortOption[] = ['newest', 'oldest', 'price_asc', 'price_desc'];
 const PRICE_TYPES: PriceType[] = ['fixed', 'negotiable', 'not_specified'];
@@ -147,9 +147,41 @@ export default function SearchScreen() {
       .slice(0, 8);
   }, [allCategories, q]);
 
+  // City shortcuts — same idea as category chips, matched client-side against the
+  // already-loaded city list (owner request 2026-07-19).
+  const citySuggestions = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    if (!query) return [];
+    return cityItems.filter((c) => c.name.toLowerCase().includes(query)).slice(0, 8);
+  }, [cityItems, q]);
+
   const onPickCategory = (slug: string) => {
     setQ('');
     setCategory(slug);
+  };
+  const onPickCity = (slug: string) => {
+    setQ('');
+    setCity(slug);
+  };
+
+  // Popular categories/cities (backend-ranked by active-listing count) — shown when
+  // the search box is focused with no query yet, instead of category-name matches.
+  const [inputFocused, setInputFocused] = useState(false);
+  const [popular, setPopular] = useState<Suggestion[]>([]);
+  useEffect(() => {
+    if (!inputFocused || q.trim() !== '' || popular.length > 0) return;
+    let cancelled = false;
+    suggestListings('')
+      .then((res) => { if (!cancelled) setPopular(res); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [inputFocused, q, popular.length]);
+
+  const onPickPopular = (item: Suggestion) => {
+    if (!item.slug) return;
+    setQ('');
+    if (item.type === 'city') setCity(item.slug);
+    else setCategory(item.slug);
   };
 
   // Count of applied filters (excludes the free-text query + default sort) → button badge.
@@ -229,6 +261,8 @@ export default function SearchScreen() {
           <TextInput
             value={q}
             onChangeText={setQ}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             placeholder={t.searchPlaceholder}
             placeholderTextColor={Colors.textFaint}
             style={styles.searchInput}
@@ -246,7 +280,7 @@ export default function SearchScreen() {
           ) : null}
         </Pressable>
       </View>
-      {catSuggestions.length > 0 ? (
+      {catSuggestions.length > 0 || citySuggestions.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -255,10 +289,35 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {catSuggestions.map((c) => (
-            <Pressable key={c.slug} style={styles.catChip} onPress={() => onPickCategory(c.slug)}>
+            <Pressable key={'c' + c.slug} style={styles.catChip} onPress={() => onPickCategory(c.slug)}>
               <Ionicons name={categoryIcon(c.slug)} size={14} color={Colors.primary} />
               <Text variant="small" color={Colors.primary} style={styles.catChipTxt} numberOfLines={1}>
                 {localized(c, 'name', locale)}
+              </Text>
+            </Pressable>
+          ))}
+          {citySuggestions.map((c) => (
+            <Pressable key={'ci' + c.slug} style={styles.catChip} onPress={() => onPickCity(c.slug)}>
+              <Ionicons name="location-outline" size={14} color={Colors.primary} />
+              <Text variant="small" color={Colors.primary} style={styles.catChipTxt} numberOfLines={1}>
+                {c.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : inputFocused && q.trim() === '' && popular.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.suggest}
+          contentContainerStyle={styles.suggestScroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          {popular.map((p, i) => (
+            <Pressable key={i} style={styles.catChip} onPress={() => onPickPopular(p)}>
+              <Ionicons name={p.type === 'city' ? 'location-outline' : 'pricetag-outline'} size={14} color={Colors.primary} />
+              <Text variant="small" color={Colors.primary} style={styles.catChipTxt} numberOfLines={1}>
+                {p.title}
               </Text>
             </Pressable>
           ))}

@@ -8,6 +8,12 @@
     "scheme": "mereketoi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4917a579-598b-4957-af8b-7dbb9137562a"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "kz.mereketoi.app",

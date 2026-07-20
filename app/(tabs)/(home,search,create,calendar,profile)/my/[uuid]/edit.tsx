@@ -9,7 +9,8 @@ import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { SelectField, SelectOption } from '@/components/ui/SelectField';
-import { Pill } from '@/components/ui/Pill';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { GuideLink } from '@/components/GuideLink';
 import { Loading, ErrorState } from '@/components/ui/StateViews';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useI18n, localized } from '@/locales';
@@ -36,9 +37,6 @@ import {
 import { ApiError } from '@/types/api';
 import { imageUrl } from '@/utils/imageUrl';
 import { formatPhoneInput } from '@/utils/format';
-
-// Price type here is fixed OR negotiable only — "not specified" is removed (owner choice).
-const PRICE_TYPES: Exclude<PriceType, 'not_specified'>[] = ['fixed', 'negotiable'];
 
 // Description length limits — mirror the backend ListingRules.
 const SHORT_MIN = 20;
@@ -70,7 +68,7 @@ export default function EditListingScreen() {
   const [regionId, setRegionId] = useState<number | null>(null);
   const [cityId, setCityId] = useState<number | null>(null);
   const [districtId, setDistrictId] = useState<number | null>(null);
-  const [priceType, setPriceType] = useState<PriceType>('negotiable');
+  const [priceType, setPriceType] = useState<PriceType>('fixed');
   const [priceAmount, setPriceAmount] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [instagram, setInstagram] = useState('');
@@ -97,7 +95,7 @@ export default function EditListingScreen() {
       setRegionId(d.region_id);
       setCityId(d.city_id);
       setDistrictId(d.district_id);
-      setPriceType(d.price_type === 'not_specified' ? 'negotiable' : d.price_type ?? 'negotiable');
+      setPriceType(d.price_type === 'not_specified' ? 'fixed' : d.price_type ?? 'fixed');
       setPriceAmount(d.price_amount != null ? String(d.price_amount) : '');
       setContactPhone(d.contact_phone ? formatPhoneInput(d.contact_phone) : '');
       setInstagram(d.instagram ?? d.details?.instagram ?? '');
@@ -156,7 +154,7 @@ export default function EditListingScreen() {
     city_id: isBigCity ? null : cityId,
     district_id: districtId,
     price_type: priceType,
-    price_amount: priceType === 'fixed' && priceAmount ? parseInt(priceAmount, 10) : null,
+    price_amount: priceAmount ? parseInt(priceAmount, 10) : null,
     contact_phone: contactPhone.replace(/\D/g, '') ? contactPhone.trim() : '',
     instagram: instagram.trim(),
   });
@@ -192,7 +190,7 @@ export default function EditListingScreen() {
     if (fullDesc.trim().length < FULL_MIN || fullDesc.trim().length > FULL_MAX) return false;
     if (contactPhone.replace(/\D/g, '').length < 10) return false;
     if (instagram.trim().length < 2) return false; // required for ALL categories (owner 2026-07-17)
-    if (priceType === 'fixed' && !priceAmount) return false;
+    if (!priceAmount) return false;
     if (!data || data.images.length < 1) return false;
     return true;
   };
@@ -299,6 +297,10 @@ export default function EditListingScreen() {
 
   return (
     <Screen scroll padded>
+      <View style={styles.topGuide}>
+        <GuideLink anchor="listing" label={t.guideListing} />
+      </View>
+
       {/* Basic */}
       <SectionTitle text={t.sectionBasic} />
       <FormField
@@ -334,6 +336,7 @@ export default function EditListingScreen() {
           error={errors.category_id}
         />
       ) : null}
+      <GuideLink anchor="categories" label={t.guideCategories} />
 
       {/* Location — Өңір (required) → [oblast] Қала → Аудан */}
       <SectionTitle text={t.sectionLocation} />
@@ -433,28 +436,22 @@ export default function EditListingScreen() {
         error={errors.full_description}
       />
 
-      {/* Price — fixed or negotiable only */}
+      {/* Price — always shown/required; "Келісімді" is a supplementary flag, not a hide switch */}
       <SectionTitle text={t.sectionPrice} />
-      <View style={styles.priceRow}>
-        {PRICE_TYPES.map((pt) => (
-          <Pill
-            key={pt}
-            label={pt === 'fixed' ? t.priceFixed : t.priceNegotiable}
-            selected={priceType === pt}
-            onPress={() => setPriceType(pt)}
-          />
-        ))}
-      </View>
-      {priceType === 'fixed' ? (
-        <FormField
-          label={t.fieldPrice}
-          hint={t.fieldPriceHint}
-          value={priceAmount}
-          onChangeText={(v) => setPriceAmount(v.replace(/\D/g, ''))}
-          keyboardType="number-pad"
-          error={errors.price_amount}
-        />
-      ) : null}
+      <FormField
+        label={t.fieldPrice}
+        hint={t.fieldPriceHint}
+        required
+        value={priceAmount}
+        onChangeText={(v) => setPriceAmount(v.replace(/\D/g, ''))}
+        keyboardType="number-pad"
+        error={errors.price_amount}
+      />
+      <Checkbox
+        label={t.priceNegotiable}
+        checked={priceType === 'negotiable'}
+        onToggle={(next) => setPriceType(next ? 'negotiable' : 'fixed')}
+      />
 
       {/* Contact — phone only, auto +7 */}
       <SectionTitle text={t.sectionContact} />
@@ -492,6 +489,7 @@ export default function EditListingScreen() {
         {isDraft ? (
           <Button
             title={t.publish}
+            variant="success"
             icon="checkmark-circle-outline"
             loading={publishing}
             disabled={saving || !complete}
@@ -527,6 +525,7 @@ function imageThumb(path: string): string {
 }
 
 const styles = StyleSheet.create({
+  topGuide: { alignItems: 'flex-end', marginBottom: Spacing.sm },
   section: { marginTop: Spacing.lg, marginBottom: Spacing.md },
   hint: { marginBottom: Spacing.sm },
   textarea: { minHeight: 120, textAlignVertical: 'top' },
@@ -563,7 +562,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  priceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   actions: { marginTop: Spacing.xl },
   gap: { height: Spacing.md },
   publishHint: { marginTop: Spacing.sm },

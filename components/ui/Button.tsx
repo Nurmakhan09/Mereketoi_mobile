@@ -3,7 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { Text } from './Text';
 
-type Variant = 'primary' | 'outline' | 'danger' | 'ghost';
+type Variant = 'primary' | 'outline' | 'danger' | 'ghost' | 'success';
 
 interface Props {
   title: string;
@@ -68,6 +68,11 @@ function variantStyle(variant: Variant, disabled: boolean) {
         return { bg: Colors.error, fg: Colors.white, border: Colors.error };
       case 'ghost':
         return { bg: 'transparent', fg: Colors.primary, border: 'transparent' };
+      case 'success':
+        // Publish/go-live CTA (owner request 2026-07-19) — green, matching the
+        // web's "free" calendar-day convention (#16a34a), distinct from the
+        // navy brand primary used for everything else.
+        return { bg: '#16a34a', fg: Colors.white, border: '#16a34a' };
       default:
         return { bg: Colors.primary, fg: Colors.white, border: Colors.primary };
     }

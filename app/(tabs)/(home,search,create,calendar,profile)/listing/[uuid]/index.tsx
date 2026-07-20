@@ -180,8 +180,12 @@ export default function ListingDetailScreen() {
 
           {/* Category + city chips */}
           <View style={styles.chips}>
-            {data.category ? <Pill label={localized(data.category, 'name', locale)} /> : null}
-            {data.city ? <Pill label={localized(data.city, 'name', locale)} /> : null}
+            {data.category ? (
+              <Pill icon="pricetag-outline" label={localized(data.category, 'name', locale)} />
+            ) : null}
+            {data.city ? (
+              <Pill icon="location-outline" label={localized(data.city, 'name', locale)} />
+            ) : null}
           </View>
 
           {data.full_description ? (
@@ -242,7 +246,9 @@ export default function ListingDetailScreen() {
           </View>
           <View style={styles.secondaryRow}>
             <Button title={t.share} variant="ghost" icon="share-social-outline" onPress={onShare} style={styles.flex1} />
-            <Button title={t.report} variant="ghost" icon="flag-outline" onPress={() => requireAuth(() => setReportOpen(true))} style={styles.flex1} />
+            {!data.is_own ? (
+              <Button title={t.report} variant="ghost" icon="flag-outline" onPress={() => requireAuth(() => setReportOpen(true))} style={styles.flex1} />
+            ) : null}
           </View>
         </View>
       </Screen>

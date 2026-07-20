@@ -201,12 +201,18 @@ function PreviewHero({ item, imageCount, t }: { item: OwnerListing; imageCount: 
   );
 }
 
+/** Days until an active listing expires (null if not active / no expiry set). Shared by
+ *  StatusNotice's warning text and PrimaryActions' extend-button gating. */
+function daysLeftFor(item: OwnerListing): number | null {
+  return item.status === 'active' && item.expires_at
+    ? Math.ceil((new Date(item.expires_at).getTime() - Date.now()) / 86400000)
+    : null;
+}
+
 /** ONE status notice (web .lh-notice): blocked / draft / expired / active≤5 days. */
 function StatusNotice({ item, t }: { item: OwnerListing; t: T }) {
   const s = item.status;
-  const daysLeft = s === 'active' && item.expires_at
-    ? Math.ceil((new Date(item.expires_at).getTime() - Date.now()) / 86400000)
-    : null;
+  const daysLeft = daysLeftFor(item);
 
   let text = '';
   let tone: 'block' | 'draft' | 'warn' | null = null;
@@ -241,12 +247,17 @@ function PrimaryActions({
   onUnarchive: () => void;
 }) {
   const s = item.status;
+  // "Созу" only once the listing is actually expiring soon (owner request 2026-07-19:
+  // ≤5 days left) — an already-expired listing always qualifies (daysLeftFor returns
+  // null once status flips to 'expired', so that branch is checked separately).
+  const daysLeft = daysLeftFor(item);
+  const showExtend = s === 'expired' || (s === 'active' && daysLeft !== null && daysLeft <= 5);
   return (
     <View style={styles.primaryRow}>
       <Button title={t.actEdit} variant="outline" icon="create-outline" onPress={onEdit} style={styles.flex1} />
       {s === 'draft' ? (
         <Button title={t.actPublish} icon="rocket-outline" onPress={onPublish} style={styles.flex1} />
-      ) : s === 'active' || s === 'expired' ? (
+      ) : showExtend ? (
         <Button title={t.actExtend} icon="refresh-outline" onPress={onRenew} style={styles.flex1} />
       ) : s === 'archived' ? (
         <Button title={t.actUnarchive} icon="arrow-undo-outline" onPress={onUnarchive} style={styles.flex1} />

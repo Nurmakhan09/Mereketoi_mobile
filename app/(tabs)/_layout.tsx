@@ -38,6 +38,12 @@ import {
  * (#000099) active; the middle «Жариялау» is a filled rounded-square (AddTabIcon).
  * Calendar carries the red pending-той-booking badge for providers (9+ cap).
  */
+
+// Module-level (not per-render) so a rapid double-tap is caught across renders —
+// see the "Guarded against a rapid double-tap race" comment below.
+const POP_DEBOUNCE_MS = 400;
+let lastPopAt = 0;
+
 export default function TabLayout() {
   const status = useAuthStore((s) => s.status);
   const isAuthed = status === 'authed';
@@ -64,10 +70,28 @@ export default function TabLayout() {
   // Re-tapping the ACTIVE tab pops its nested stack back to the tab's root screen
   // (native iOS behaviour) — each tab hosts a Stack now, so without this a deep
   // detail page would stay put when its own tab icon is tapped.
+  //
+  // Guarded against a rapid double-tap race (owner report 2026-07-19): tapping a
+  // tab twice fast, then tapping a DIFFERENT tab, could leave that tab failing to
+  // open. Root cause: this dispatched popToTop() against `route.state` captured
+  // in the listener-factory closure — on a fast double-tap the second dispatch
+  // could fire against an already-stale target key while the first was still
+  // being processed, and the very next (different-tab) tabPress could then land
+  // while the navigator was mid-update. Fixed by (a) re-reading this tab's route
+  // fresh, by key, from the navigator's CURRENT state instead of trusting the
+  // closure, and (b) ignoring a repeat repress within POP_DEBOUNCE_MS.
   const popToRootOnRepress = ({ navigation, route }: any) => ({
     tabPress: () => {
-      const state = route?.state;
-      if (navigation.isFocused() && state?.key && (state.index ?? 0) > 0) {
+      if (!navigation.isFocused()) return;
+
+      const now = Date.now();
+      if (now - lastPopAt < POP_DEBOUNCE_MS) return;
+
+      const freshRoute: any =
+        navigation.getState?.()?.routes?.find((r: any) => r.key === route?.key) ?? route;
+      const state = freshRoute?.state;
+      if (state?.key && (state.index ?? 0) > 0) {
+        lastPopAt = now;
         navigation.dispatch({ ...StackActions.popToTop(), target: state.key });
       }
     },

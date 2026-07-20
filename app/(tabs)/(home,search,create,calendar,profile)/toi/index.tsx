@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
+import { GuideLink } from '@/components/GuideLink';
 import { Button } from '@/components/ui/Button';
 import { Pill } from '@/components/ui/Pill';
 import { FormField } from '@/components/ui/FormField';
@@ -185,8 +186,9 @@ export default function ToiScreen() {
 
   return (
     <View style={styles.fill}>
-      {/* Cost badge */}
+      {/* Guide link + cost badge */}
       <View style={styles.topbar}>
+        <GuideLink anchor="toi" label={t.guideToi} />
         <Card style={styles.costCard} padded>
           <Text variant="xsmall" color={Colors.textMuted}>{t.toiCostBadge}</Text>
           <Text variant="h3" color={Colors.secondary}>
@@ -299,8 +301,8 @@ function BookingCardView({ card, onChanged }: { card: BookingCard; onChanged: ()
 
       {card.status === 'accepted' ? (
         <View style={styles.deal}>
-          <DealRow label={t.dealAgreed} value={card.price != null ? `${card.price} ₸` : '—'} />
-          <DealRow label={t.dealPaid} value={card.paid != null ? `${card.paid} ₸` : '—'} />
+          <DealRow label={t.dealAgreed} value={card.price != null ? `${card.price} ${t.tenge}` : '—'} />
+          <DealRow label={t.dealPaid} value={card.paid != null ? `${card.paid} ${t.tenge}` : '—'} />
           <DealRow label={t.dealTime} value={card.time || '—'} />
           <DealRow label={t.dealAddress} value={card.address || '—'} />
         </View>
@@ -373,7 +375,7 @@ function DealRow({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: Colors.background },
-  topbar: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, alignItems: 'flex-end' },
+  topbar: { paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, alignItems: 'flex-end', gap: Spacing.xs },
   costCard: { alignItems: 'flex-end' },
   dots: { maxHeight: 52, flexGrow: 0 },
   dotsInner: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.sm, alignItems: 'center' },

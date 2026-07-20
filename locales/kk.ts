@@ -200,6 +200,7 @@ const kk = {
   listingSaved: 'Өзгерістер сақталды',
   draftSaved: 'Жоба сақталды',
   published: 'Хабарландыру жарияланды',
+  publishedWithDuration: 'Хабарландыру {days} күнге жарияланды',
   selectCategory: 'Категория таңдаңыз',
   selectCity: 'Қала таңдаңыз',
 
@@ -292,6 +293,10 @@ const kk = {
   menuReminders: 'Еске салғыштар',
   menuAbout: 'Біз туралы',
   menuHelp: 'Көмек',
+  guideListing: 'Хабарландыру беру үлгісі',
+  guideCategories: 'Санаттар туралы',
+  guideToi: 'Той ұйымдастыру туралы',
+  guideCalendar: 'Күнтізбе туралы',
   menuTerms: 'Пайдаланушы келісімі',
   menuPrivacy: 'Құпиялылық саясаты',
   menuContact: 'Байланыс',
@@ -484,6 +489,10 @@ const kk = {
   updateTitle: 'Жаңарту қажет',
   updateBody: 'Қосымшаның жаңа нұсқасы шықты. Жалғастыру үшін жаңартыңыз.',
   updateButton: 'Жаңарту',
+
+  // OTA (EAS Update) — same-session banner, separate from the force-update blocker above.
+  otaUpdateReady: 'Жаңарту дайын — қолданбаны жаңарту үшін басыңыз',
+  otaUpdateApply: 'Қолдану',
 };
 
 export default kk;

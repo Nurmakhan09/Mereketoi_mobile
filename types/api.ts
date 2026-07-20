@@ -88,4 +88,14 @@ export interface AppConfig {
     mobile_button_text_kk?: string;
     mobile_button_text_ru?: string;
   };
+  /** Server-driven home promo block (Admin → Басты бет банері) — off by default. */
+  home_banner?: {
+    enabled: boolean;
+    title_kk?: string;
+    title_ru?: string;
+    subtitle_kk?: string;
+    subtitle_ru?: string;
+    link_url?: string;
+    bg_color?: string;
+  };
 }

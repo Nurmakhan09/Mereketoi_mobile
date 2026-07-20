@@ -28,6 +28,8 @@ export function ListingCard({ item, onPress, favorited, onToggleFavorite }: Prop
   });
 
   const districtName = item.district ? localized(item.district, 'name', locale) : '';
+  const categoryName = item.category ? localized(item.category, 'name', locale) : '';
+  const cityName = item.city ? localized(item.city, 'name', locale) : '';
 
   const onShare = (e?: { stopPropagation?: () => void }) => {
     e?.stopPropagation?.();
@@ -78,9 +80,24 @@ export function ListingCard({ item, onPress, favorited, onToggleFavorite }: Prop
         <Text variant="h3" color={Colors.text} numberOfLines={2} style={styles.title}>
           {item.title}
         </Text>
-        <Text variant="xsmall" color={Colors.textMuted} numberOfLines={1} style={styles.meta}>
-          {districtName || ' '}
-        </Text>
+        <View style={styles.meta}>
+          {categoryName ? (
+            <View style={styles.metaItem}>
+              <Ionicons name="pricetag-outline" size={12} color={Colors.textMuted} />
+              <Text variant="xsmall" color={Colors.textMuted} numberOfLines={1} style={styles.metaText}>
+                {categoryName}
+              </Text>
+            </View>
+          ) : null}
+          {cityName || districtName ? (
+            <View style={styles.metaItem}>
+              <Ionicons name="location-outline" size={12} color={Colors.textMuted} />
+              <Text variant="xsmall" color={Colors.textMuted} numberOfLines={1} style={styles.metaText}>
+                {cityName || districtName}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <Text variant="small" color={Colors.textMuted} numberOfLines={2} style={styles.desc}>
           {item.short_description || ' '}
         </Text>
@@ -125,7 +142,9 @@ const styles = StyleSheet.create({
   },
   body: { padding: Spacing.md, flex: 1 },
   title: { minHeight: 48 }, // 2 lines of h3 — keeps card bodies aligned
-  meta: { marginTop: 2, minHeight: 16 },
+  meta: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 2, minHeight: 16, columnGap: Spacing.sm },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  metaText: { flexShrink: 1 },
   desc: { marginTop: Spacing.xs, minHeight: 38 }, // 2 lines reserved
   price: { color: Colors.primary },
   foot: {

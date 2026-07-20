@@ -192,6 +192,7 @@ const ru: Strings = {
   listingSaved: 'Изменения сохранены',
   draftSaved: 'Черновик сохранён',
   published: 'Объявление опубликовано',
+  publishedWithDuration: 'Объявление опубликовано на {days} дней',
   selectCategory: 'Выберите категорию',
   selectCity: 'Выберите город',
 
@@ -280,6 +281,10 @@ const ru: Strings = {
   menuReminders: 'Напоминания',
   menuAbout: 'О нас',
   menuHelp: 'Помощь',
+  guideListing: 'Пример объявления',
+  guideCategories: 'О категориях',
+  guideToi: 'Об организации тоя',
+  guideCalendar: 'О календаре',
   menuTerms: 'Пользовательское соглашение',
   menuPrivacy: 'Политика конфиденциальности',
   menuContact: 'Контакты',
@@ -468,6 +473,10 @@ const ru: Strings = {
   updateTitle: 'Требуется обновление',
   updateBody: 'Вышла новая версия приложения. Обновите, чтобы продолжить.',
   updateButton: 'Обновить',
+
+  // OTA (EAS Update) — same-session banner, separate from the force-update blocker above.
+  otaUpdateReady: 'Обновление готово — нажмите, чтобы применить',
+  otaUpdateApply: 'Применить',
 };
 
 export default ru;
