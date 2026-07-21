@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { ActiveTheme, Colors, Fonts, Radius } from '@/constants/theme';
 import { AddTabIcon } from '@/components/AddTabIcon';
 import { GlassTabBarBackground } from '@/components/GlassTabBarBackground';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { useAuthStore } from '@/stores/authStore';
 import { useMyListingStore } from '@/stores/myListingStore';
 import { useI18n } from '@/locales';
@@ -157,6 +158,7 @@ export default function TabLayout() {
         : undefined;
 
   return (
+    <>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -235,5 +237,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    <OnboardingTour />
+    </>
   );
 }

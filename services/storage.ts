@@ -54,4 +54,6 @@ export const StorageKeys = {
   pushToken: 'mk_push_token',
   /** Last successful GET /app-config payload — hydrated at boot (offline-first). */
   appConfig: 'mk_app_config',
+  /** '1' once the new-user onboarding tour has been shown (see OnboardingTour). */
+  onboardingSeen: 'mk_onboarding_seen',
 } as const;

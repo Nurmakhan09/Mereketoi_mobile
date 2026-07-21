@@ -493,6 +493,26 @@ const kk = {
   // OTA (EAS Update) — same-session banner, separate from the force-update blocker above.
   otaUpdateReady: 'Жаңарту дайын — қолданбаны жаңарту үшін басыңыз',
   otaUpdateApply: 'Қолдану',
+
+  // Onboarding tour (new-user walkthrough — OnboardingTour.tsx)
+  onboardWelcomeTitle: 'Mereketoi-ге қош келдіңіз!',
+  onboardWelcomeBody: 'Қосымшаның негізгі бөлімдерін бір минутта көрсетіп өтейік.',
+  onboardHomeTitle: 'Басты бет',
+  onboardHomeBody: 'Жаңа хабарландырулар мен санаттарды осы жерден көресіз.',
+  onboardSearchTitle: 'Іздеу',
+  onboardSearchBody: 'Керек қызметті қала мен санат бойынша осы жерден табасыз.',
+  onboardCreateTitle: 'Жариялау',
+  onboardCreateBody: 'Өз қызметіңізді осы «+» батырмасы арқылы тегін жариялайсыз.',
+  onboardCalendarTitle: 'Күнтізбе',
+  onboardCalendarBody: 'Брондау сұраныстары мен бос күндеріңізді осы жерден басқарасыз.',
+  onboardProfileTitle: 'Профиль',
+  onboardProfileBody: 'Аккаунт, таңдаулылар және баптаулар осы бөлімде.',
+  onboardDoneTitle: 'Дайын!',
+  onboardDoneBody: 'Енді бастауға болады. Сәтті болсын!',
+  onboardSkip: 'Өткізу',
+  onboardStart: 'Бастау',
+  onboardReplayTitle: 'Таныстыру',
+  onboardReplay: 'Танысу турын қайта көрсету',
 };
 
 export default kk;

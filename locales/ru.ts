@@ -477,6 +477,26 @@ const ru: Strings = {
   // OTA (EAS Update) — same-session banner, separate from the force-update blocker above.
   otaUpdateReady: 'Обновление готово — нажмите, чтобы применить',
   otaUpdateApply: 'Применить',
+
+  // Onboarding tour (new-user walkthrough — OnboardingTour.tsx)
+  onboardWelcomeTitle: 'Добро пожаловать в Mereketoi!',
+  onboardWelcomeBody: 'За минуту покажем основные разделы приложения.',
+  onboardHomeTitle: 'Главная',
+  onboardHomeBody: 'Здесь вы видите новые объявления и категории.',
+  onboardSearchTitle: 'Поиск',
+  onboardSearchBody: 'Находите нужную услугу по городу и категории.',
+  onboardCreateTitle: 'Разместить',
+  onboardCreateBody: 'Размещайте свою услугу бесплатно по кнопке «+».',
+  onboardCalendarTitle: 'Календарь',
+  onboardCalendarBody: 'Управляйте заявками на бронирование и свободными датами.',
+  onboardProfileTitle: 'Профиль',
+  onboardProfileBody: 'Аккаунт, избранное и настройки — в этом разделе.',
+  onboardDoneTitle: 'Готово!',
+  onboardDoneBody: 'Можно начинать. Удачи!',
+  onboardSkip: 'Пропустить',
+  onboardStart: 'Начать',
+  onboardReplayTitle: 'Знакомство',
+  onboardReplay: 'Показать обзор снова',
 };
 
 export default ru;

@@ -12,6 +12,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useI18n } from '@/locales';
 import { useAuthStore } from '@/stores/authStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import { updateProfile, changePassword } from '@/services/api/auth';
 import { formatPhone } from '@/utils/format';
 import { ApiError } from '@/types/api';
@@ -24,6 +25,7 @@ export default function SettingsScreen() {
   const token = useAuthStore((s) => s.token);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const clearFav = useFavoritesStore((s) => s.clear);
+  const replayTour = useOnboardingStore((s) => s.replay);
   const [deleting, setDeleting] = useState(false);
 
   // Name section: read-only until "Edit" is pressed.
@@ -162,6 +164,14 @@ export default function SettingsScreen() {
             </Pressable>
           </>
         )}
+      </Card>
+
+      {/* Onboarding — replay the new-user walkthrough. */}
+      <Text variant="h3" color={Colors.text} style={styles.section}>
+        {t.onboardReplayTitle}
+      </Text>
+      <Card padded>
+        <Button title={t.onboardReplay} variant="outline" icon="sparkles-outline" onPress={replayTour} />
       </Card>
 
       {/* Danger zone — permanent account deletion (App Store 5.1.1 v / Google Play). */}
