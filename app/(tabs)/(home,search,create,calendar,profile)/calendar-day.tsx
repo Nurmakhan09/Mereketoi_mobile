@@ -119,7 +119,15 @@ export default function CalendarDayScreen() {
 
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);
-    try { await fn(); await load(); }
+    try {
+      await fn();
+      await load();
+      // Accepting/declining changes the pending-booking count that the red Calendar
+      // TAB badge renders. load() only refreshes this day, so without this the badge
+      // kept its boot-time number for the whole session (the website recomputes it on
+      // every page render — this restores that parity).
+      void useMyListingStore.getState().refresh();
+    }
     catch (e: any) { Alert.alert(t.error, e?.message ?? t.errorNetwork); }
     finally { setBusy(false); }
   };

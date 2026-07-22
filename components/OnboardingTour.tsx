@@ -35,8 +35,8 @@ import {
  *
  * The tab geometry is COMPUTED from the same constants the real bar uses
  * (TAB_BAR_HEIGHT / GLASS_* + insets), mirroring GlassTabBarBackground — no refs
- * into the navigator. Exact on Android (solid) and older-iOS (blur); on iOS 26
- * glass it assumes the intended inset pill.
+ * into the navigator. Matches all three bar modes: solid (Android), blur (older
+ * iOS) and the inset glass pill (iOS 26).
  */
 
 const N_TABS = 5;

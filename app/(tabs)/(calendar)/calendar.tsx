@@ -86,6 +86,7 @@ export default function CalendarTab() {
   const storeUuid = useMyListingStore((s) => s.uuid);
   const hasPublished = useMyListingStore((s) => s.hasPublished);
   const loaded = useMyListingStore((s) => s.loaded);
+  const storeError = useMyListingStore((s) => s.error);
   const refreshMine = useMyListingStore((s) => s.refresh);
 
   const [month, setMonth] = useState<string | undefined>(undefined);
@@ -98,7 +99,9 @@ export default function CalendarTab() {
     // The calendar is for PUBLISHED providers only (mirrors the website). A draft /
     // missing listing → no fetch; the publish-first empty state shows instead.
     if (!hasPublished || !storeUuid) {
-      if (!loaded) await refreshMine();
+      // Retry on a FAILED previous fetch too — otherwise one bad boot request left
+      // `loaded: true` with empty data and this branch never re-synced.
+      if (!loaded || storeError) await refreshMine();
       setLoading(false);
       return;
     }
@@ -164,6 +167,16 @@ export default function CalendarTab() {
 
   // Wait for the one-listing flag to resolve before deciding.
   if (!loaded && !data) return <Loading />;
+
+  // A FAILED my-listing fetch must not masquerade as "you have no listing": show an
+  // error with retry rather than telling a published provider to publish again.
+  if (storeError && !hasPublished) {
+    return (
+      <View style={styles.fill}>
+        <ErrorState message={t.errorNetwork} retryLabel={t.retry} onRetry={() => void refreshMine()} />
+      </View>
+    );
+  }
 
   // Calendar is unavailable until the ad is PUBLISHED (mirrors the website: a draft
   // / missing listing has no calendar). Show a publish-first prompt instead.

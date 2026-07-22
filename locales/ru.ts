@@ -5,7 +5,7 @@ const ru: Strings = {
   // Tabs / nav
   tabHome: 'Главная',
   tabSearch: 'Поиск',
-  tabCreate: 'Подать',
+  tabCreate: 'Разместить', // web parity: lang('App.post') in Language/ru/App.php
   tabFavorites: 'Избранное',
   tabProfile: 'Профиль',
   tabNotifications: 'Уведомления',

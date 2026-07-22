@@ -29,9 +29,12 @@ export default function SetNicknameScreen() {
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
 
+  // navigate(), never replace() — this is a ROOT-level modal and replacing it with a
+  // route inside (tabs) duplicates the whole tab navigator in the root stack (see
+  // the same guard in app/auth.tsx afterAuth).
   const done = () => {
-    if (returnTo) router.replace(returnTo as never);
-    else router.replace('/');
+    if (returnTo) router.navigate(returnTo as never);
+    else router.navigate('/');
   };
 
   const onSave = async () => {

@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { AppConfig } from '@/types';
 import { fetchAppConfig } from '@/services/api/appConfig';
 import { getItem, setItem, StorageKeys } from '@/services/storage';
-import { ActiveTheme, Colors, Palette } from '@/constants/theme';
+import { ActiveTheme, Colors, DarkPalette, Palette } from '@/constants/theme';
 import { APP_VERSION } from '@/constants/config';
 
 interface AppConfigState {
@@ -89,7 +89,12 @@ export const useAppConfigStore = create<AppConfigState>((set, get) => ({
       // otherwise fall back to the bundled palette. Never block the app —
       // maintenance/force-update are best-effort gates.
       if (!get().config) {
-        Object.assign(Colors, Palette);
+        // Theme-aware, mirroring applyBrand's dark guard above: `Palette` is the
+        // LIGHT token set, so assigning it unconditionally repainted a DARK session
+        // with light values — navy icons on the dark tab bar (effectively invisible)
+        // and, on Android, a white bar under dark screens. Reachable on a first
+        // launch (or cleared storage) while offline / the API is down.
+        Object.assign(Colors, ActiveTheme === 'dark' ? DarkPalette : Palette);
       }
       set({ loaded: true, error: true });
     }

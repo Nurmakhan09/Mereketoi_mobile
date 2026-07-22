@@ -27,17 +27,20 @@ export function ListingLinkRedirect() {
   useEffect(() => {
     let cancelled = false;
 
+    // navigate(), never replace(): this stub is a ROOT-level route, so replacing it
+    // with a route inside (tabs) makes StackRouter mint a SECOND '(tabs)' navigator
+    // (back then reveals a stale copy of the app). NAVIGATE reuses the existing one.
     const resolve = async () => {
       const code = slug ? parsePublicCode(slug) : null;
       if (!code) {
-        router.replace('/');
+        router.navigate('/');
         return;
       }
       try {
         const listing = await fetchListing(code);
-        if (!cancelled) router.replace(`/listing/${listing.uuid}`);
+        if (!cancelled) router.navigate(`/listing/${listing.uuid}`);
       } catch {
-        if (!cancelled) router.replace('/');
+        if (!cancelled) router.navigate('/');
       }
     };
 

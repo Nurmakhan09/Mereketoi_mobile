@@ -41,9 +41,16 @@ import {
  */
 
 // Module-level (not per-render) so a rapid double-tap is caught across renders —
-// see the "Guarded against a rapid double-tap race" comment below.
+// see the "Guarded against a rapid double-tap race" comment below. Keyed PER TAB
+// (route.key): a single shared timestamp let a pop on tab A silently swallow a
+// legitimate repress-pop on tab B within the same 400ms.
 const POP_DEBOUNCE_MS = 400;
-let lastPopAt = 0;
+const lastPopAt = new Map<string, number>();
+
+// The guest "+" gate pushes /auth on a gesture; without a guard a fast double-tap
+// opens the modal TWICE (see the tabPress handler on the (create) screen).
+const AUTH_NAV_DEBOUNCE_MS = 600;
+let lastAuthNavAt = 0;
 
 export default function TabLayout() {
   const status = useAuthStore((s) => s.status);
@@ -80,19 +87,22 @@ export default function TabLayout() {
   // being processed, and the very next (different-tab) tabPress could then land
   // while the navigator was mid-update. Fixed by (a) re-reading this tab's route
   // fresh, by key, from the navigator's CURRENT state instead of trusting the
-  // closure, and (b) ignoring a repeat repress within POP_DEBOUNCE_MS.
+  // closure, and (b) ignoring a repeat repress within POP_DEBOUNCE_MS — scoped to
+  // THIS tab's route.key, since the race being guarded is a double-tap on the same
+  // tab; a shared timestamp also dropped a valid pop on a different tab.
   const popToRootOnRepress = ({ navigation, route }: any) => ({
     tabPress: () => {
       if (!navigation.isFocused()) return;
 
       const now = Date.now();
-      if (now - lastPopAt < POP_DEBOUNCE_MS) return;
+      const tabKey: string = route?.key ?? '';
+      if (now - (lastPopAt.get(tabKey) ?? 0) < POP_DEBOUNCE_MS) return;
 
       const freshRoute: any =
         navigation.getState?.()?.routes?.find((r: any) => r.key === route?.key) ?? route;
       const state = freshRoute?.state;
       if (state?.key && (state.index ?? 0) > 0) {
-        lastPopAt = now;
+        lastPopAt.set(tabKey, now);
         navigation.dispatch({ ...StackActions.popToTop(), target: state.key });
       }
     },
@@ -103,8 +113,13 @@ export default function TabLayout() {
       ? {
           // iOS 26 Liquid Glass: floating pill, content scrolls beneath it.
           position: 'absolute' as const,
-          left: GLASS_SIDE_MARGIN,
-          right: GLASS_SIDE_MARGIN,
+          // MUST be margins, not left/right: the library's base bar style sets the
+          // LOGICAL edges `start: 0 / end: 0` (BottomTabBar styles.bottom) and Yoga
+          // gives logical edges precedence over physical left/right, so physical
+          // insets were dead code and the "floating pill" rendered full-width,
+          // corners jammed against the screen edges. Margins aren't set by the base
+          // style, so they survive the merge.
+          marginHorizontal: GLASS_SIDE_MARGIN,
           bottom: bottomInset + GLASS_BOTTOM_GAP,
           height: TAB_BAR_HEIGHT,
           borderRadius: Radius.xl,
@@ -208,7 +223,15 @@ export default function TabLayout() {
           tabPress: (e) => {
             if (!isAuthed) {
               e.preventDefault();
-              router.push({ pathname: '/auth', params: { returnTo: '/create' } });
+              // preventDefault keeps this tab UNFOCUSED, so a second fast tap runs
+              // this exact branch again. push() would stack a SECOND /auth modal
+              // (closing one then reveals an identical sheet — "✕ looks broken");
+              // navigate() re-targets the existing one, and the timestamp guard
+              // covers taps that drain before the first commit lands.
+              const now = Date.now();
+              if (now - lastAuthNavAt < AUTH_NAV_DEBOUNCE_MS) return;
+              lastAuthNavAt = now;
+              router.navigate({ pathname: '/auth', params: { returnTo: '/create' } });
               return;
             }
             popToRootOnRepress(ctx).tabPress();

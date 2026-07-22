@@ -74,10 +74,18 @@ export default function AuthScreen() {
   }, []);
 
   // After a SUCCESSFUL auth → go to the intended destination.
+  //
+  // navigate(), never replace(): this screen is a ROOT-level modal, so replacing it
+  // with a route that lives inside (tabs) makes expo-router dispatch a root REPLACE
+  // with payload '(tabs)' — and StackRouter's REPLACE always mints a BRAND-NEW route
+  // instead of reusing the existing one. The root stack became [(tabs), (tabs)#new],
+  // so pressing back from a tab root slid the whole UI away to reveal a stale second
+  // copy of the app (and every pre-login tab stack was orphaned there). NAVIGATE
+  // reuses the existing '(tabs)' route and pops this modal off.
   const afterAuth = () => {
-    if (returnTo) router.replace(returnTo as never);
+    if (returnTo) router.navigate(returnTo as never);
     else if (router.canGoBack()) router.back();
-    else router.replace('/');
+    else router.navigate('/');
   };
 
   // The ✕ (cancel) must NEVER use returnTo: some gated returnTo targets (e.g. the
@@ -85,7 +93,7 @@ export default function AuthScreen() {
   // close trapped the user on this screen. Just dismiss to a safe public screen.
   const onClose = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/');
+    else router.navigate('/');
   };
 
   const switchMode = (m: Mode) => {
