@@ -187,9 +187,18 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // iOS: subtle native-style cross-fade between tab scenes (Android keeps
-        // the platform's instant switch).
-        animation: tabBarMode === 'solid' ? 'none' : 'fade',
+        // HYPOTHESIS A TEST (owner-approved 2026-07-24). Was:
+        //   animation: tabBarMode === 'solid' ? 'none' : 'fade'
+        // i.e. an iOS-only cross-fade between tab scenes; Android always ran 'none'
+        // and has never shown the bug. The owner's screenshots show a fully working
+        // tab BAR above a blank white content area — and the bar lives OUTSIDE the
+        // animated scene container. That is the signature of an incoming scene left
+        // detached / at opacity 0 when a rapid double-tap interrupts an in-flight
+        // fade: the navigator is alive, the bar repaints, the screen never presents.
+        // The fade is cosmetic, not a feature, so forcing 'none' is a fix rather
+        // than a mask IF it is the cause. If the white screen survives this, the
+        // cause is elsewhere and the fade can come back.
+        animation: 'none',
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle,
