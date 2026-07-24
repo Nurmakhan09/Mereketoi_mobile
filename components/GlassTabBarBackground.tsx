@@ -17,10 +17,25 @@ const GROUP_ORDER = ['(home)', '(search)', '(create)', '(calendar)', '(profile)'
  */
 export function GlassTabBarBackground() {
   const segments = useSegments() as string[];
-  const active = Math.max(0, GROUP_ORDER.indexOf(segments[1] ?? ''));
+
+  // useSegments() reports the GLOBAL focused route, so mid-transition — and while
+  // any root-level route is up (/auth, /set-nickname, /forgot-password) — segments[1]
+  // is not one of our groups and indexOf() returns -1. The old `Math.max(0, …)`
+  // turned that into 0, slamming the blob to Home and cutting the in-flight spring
+  // short on every tab switch. Hold the last VALID tab instead.
+  const lastActive = useRef(0);
+  const rawIndex = GROUP_ORDER.indexOf(segments[1] ?? '');
+  const active = rawIndex >= 0 ? rawIndex : lastActive.current;
+
+  // Written in an effect, not during render, so a double render can't tear it.
+  useEffect(() => {
+    if (rawIndex >= 0) lastActive.current = rawIndex;
+  }, [rawIndex]);
 
   const [width, setWidth] = useState(0);
   const x = useSharedValue(0);
+  // Set once, on the first laid-out frame, and deliberately NOT reset when `width`
+  // changes: on rotation the blob should SPRING to its new slot, not snap to it.
   const positioned = useRef(false);
 
   const slot = width / GROUP_ORDER.length;

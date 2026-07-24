@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 
@@ -21,18 +21,27 @@ export default function CreateTab() {
   const status = useAuthStore((s) => s.status);
   const [error, setError] = useState(false);
 
+  // Re-entrancy guard. MUST be a ref, never state: a fast double-tap re-runs the
+  // focus effect BEFORE React commits a state update, so a state flag would still
+  // read `false` on the second pass and both passes would navigate — two
+  // router.replace calls racing each other (white screen) plus two blank drafts
+  // from createListing().
+  const inFlight = useRef(false);
+
   const start = useCallback(async () => {
     if (status === 'loading') return;
-    if (status !== 'authed') {
-      // Defensive fallback: the create tab's tabPress listener already gates guests
-      // before this screen mounts; a deep-link straight to /create still lands here.
-      // push (not replace) so the modal stacks cleanly rather than coercing a
-      // cross-navigator replace from within the focus effect.
-      router.push({ pathname: '/auth', params: { returnTo: '/create' } });
-      return;
-    }
-    setError(false);
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
+      if (status !== 'authed') {
+        // Defensive fallback: the create tab's tabPress listener already gates guests
+        // before this screen mounts; a deep-link straight to /create still lands here.
+        // push (not replace) so the modal stacks cleanly rather than coercing a
+        // cross-navigator replace from within the focus effect.
+        router.push({ pathname: '/auth', params: { returnTo: '/create' } });
+        return;
+      }
+      setError(false);
       // Has a listing already? A listing WITH content → My Listings hub. A BLANK
       // draft (no title, no cover) → straight into the editor to finish it —
       // sending it to the hub bounced «Жаңа хабарландыру» back here forever, so
@@ -48,8 +57,13 @@ export default function CreateTab() {
       }
       const uuid = await createListing();
       router.replace(`/my/${uuid}/edit`);
+      return;
     } catch {
       setError(true);
+    } finally {
+      // Always released, including on every early return above — otherwise a
+      // failed attempt would wedge the tab permanently.
+      inFlight.current = false;
     }
   }, [status]);
 

@@ -43,8 +43,12 @@ import {
 // Module-level (not per-render) so a rapid double-tap is caught across renders —
 // see the "Guarded against a rapid double-tap race" comment below. Keyed PER TAB
 // (route.key): a single shared timestamp let a pop on tab A silently swallow a
-// legitimate repress-pop on tab B within the same 400ms.
-const POP_DEBOUNCE_MS = 400;
+// legitimate repress-pop on tab B within the same window.
+//
+// 600ms, not 400: it has to outlast the iOS cross-fade between tab scenes
+// (screenOptions.animation === 'fade'), which is the exact window in which a
+// second press used to land a popToTop on a half-transitioned stack.
+const POP_DEBOUNCE_MS = 600;
 const lastPopAt = new Map<string, number>();
 
 // The guest "+" gate pushes /auth on a gesture; without a guard a fast double-tap
@@ -79,30 +83,32 @@ export default function TabLayout() {
   // (native iOS behaviour) — each tab hosts a Stack now, so without this a deep
   // detail page would stay put when its own tab icon is tapped.
   //
-  // Guarded against a rapid double-tap race (owner report 2026-07-19): tapping a
-  // tab twice fast, then tapping a DIFFERENT tab, could leave that tab failing to
-  // open. Root cause: this dispatched popToTop() against `route.state` captured
-  // in the listener-factory closure — on a fast double-tap the second dispatch
-  // could fire against an already-stale target key while the first was still
-  // being processed, and the very next (different-tab) tabPress could then land
-  // while the navigator was mid-update. Fixed by (a) re-reading this tab's route
-  // fresh, by key, from the navigator's CURRENT state instead of trusting the
-  // closure, and (b) ignoring a repeat repress within POP_DEBOUNCE_MS — scoped to
-  // THIS tab's route.key, since the race being guarded is a double-tap on the same
-  // tab; a shared timestamp also dropped a valid pop on a different tab.
+  // Guarded against a rapid double-tap race: tapping a tab twice fast could blank
+  // the screen on iOS. bottom-tabs emits tabPress BEFORE the tab switch is
+  // dispatched, so on the press that merely SWITCHES to a tab this listener runs
+  // while the tab is still unfocused. With the old `isFocused()`-first ordering
+  // that press returned without recording anything, so the second press of a
+  // double-tap sailed past the debounce and dispatched popToTop into a stack that
+  // was still mid cross-fade — leaving a detached scene, i.e. a white page.
+  //
+  // Order now: debounce → stamp UNCONDITIONALLY → focus check → pop. Stamping
+  // every accepted press (not just the ones that actually pop) is what closes the
+  // transition window. The dispatch also re-reads this tab's route fresh, by key,
+  // from the navigator's CURRENT state rather than trusting the stale `route`
+  // captured in this listener-factory closure.
   const popToRootOnRepress = ({ navigation, route }: any) => ({
     tabPress: () => {
-      if (!navigation.isFocused()) return;
-
       const now = Date.now();
       const tabKey: string = route?.key ?? '';
       if (now - (lastPopAt.get(tabKey) ?? 0) < POP_DEBOUNCE_MS) return;
+      lastPopAt.set(tabKey, now);
+
+      if (!navigation.isFocused()) return;
 
       const freshRoute: any =
         navigation.getState?.()?.routes?.find((r: any) => r.key === route?.key) ?? route;
       const state = freshRoute?.state;
       if (state?.key && (state.index ?? 0) > 0) {
-        lastPopAt.set(tabKey, now);
         navigation.dispatch({ ...StackActions.popToTop(), target: state.key });
       }
     },

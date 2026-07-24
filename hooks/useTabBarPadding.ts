@@ -13,17 +13,31 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
  */
 export type TabBarMode = 'glass' | 'blur' | 'solid';
 
-let cachedMode: TabBarMode | null = null;
+/** Dev-only: remembers the last logged availability so we log the value and any flip, not every call. */
+let lastLoggedGlass: boolean | null = null;
 
 /**
- * Resolved lazily on first use (memoized) instead of at module-eval time —
- * keeps the expo-glass-effect native call OFF the cold-start module-load path.
+ * Resolved on EVERY call — deliberately NOT memoized.
+ *
+ * The previous one-shot cache latched whatever `isLiquidGlassAvailable()` happened
+ * to return on the very first call. If that call landed before expo-glass-effect's
+ * native module was ready it answered `false`, pinning an iOS 26 device to 'blur'
+ * for the whole session. That mattered beyond looks: `tabBarStyle` (in
+ * app/(tabs)/_layout.tsx) and `useTabBarPadding()` (via components/ui/Screen) read
+ * the mode at DIFFERENT moments, so a mid-boot flip made them disagree about the
+ * bar's height and the content padding beneath it.
+ *
+ * The __DEV__ log prints the raw availability once and again on any change — if it
+ * ever flips false → true after boot, the latching theory is confirmed.
  */
 export function getTabBarMode(): TabBarMode {
-  if (cachedMode === null) {
-    cachedMode = Platform.OS === 'ios' ? (isLiquidGlassAvailable() ? 'glass' : 'blur') : 'solid';
+  if (Platform.OS !== 'ios') return 'solid';
+  const glass = isLiquidGlassAvailable();
+  if (__DEV__ && glass !== lastLoggedGlass) {
+    lastLoggedGlass = glass;
+    console.log('[tabBarMode] isLiquidGlassAvailable() =', glass, '→', glass ? 'glass' : 'blur');
   }
-  return cachedMode;
+  return glass ? 'glass' : 'blur';
 }
 
 /** Bar content height, excluding the bottom safe-area inset. */
