@@ -19,6 +19,11 @@ import { fetchUnreadCount } from '@/services/api/notifications';
 import { useReloadOnTabPress } from '@/hooks/useReloadOnTabPress';
 import { useTabBarPadding } from '@/hooks/useTabBarPadding';
 
+/** Catches a throw in THIS screen so it shows the cause instead of a white app
+ *  (and keeps the tab bar alive). Nearest boundary wins, so a profile crash is
+ *  reported here rather than by the root one. */
+export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
+
 export default function ProfileScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();

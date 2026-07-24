@@ -21,6 +21,11 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+/** Root catch-all. Without a boundary anywhere, ANY render-time throw made React
+ *  unmount the whole tree and the app went pure white — in a production/OTA build
+ *  with no redbox, no message and no way back. Now it shows the error + stack. */
+export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {

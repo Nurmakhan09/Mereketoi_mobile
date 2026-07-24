@@ -40,6 +40,10 @@ import {
  * Calendar carries the red pending-той-booking badge for providers (9+ cap).
  */
 
+/** Mid-level net: catches a throw in the tab navigator itself (between the root
+ *  boundary and each screen's own). */
+export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
+
 // Module-level (not per-render) so a rapid double-tap is caught across renders —
 // see the "Guarded against a rapid double-tap race" comment below. Keyed PER TAB
 // (route.key): a single shared timestamp let a pop on tab A silently swallow a
