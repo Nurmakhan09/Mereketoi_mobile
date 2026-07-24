@@ -13,31 +13,26 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
  */
 export type TabBarMode = 'glass' | 'blur' | 'solid';
 
-/** Dev-only: remembers the last logged availability so we log the value and any flip, not every call. */
-let lastLoggedGlass: boolean | null = null;
+let cachedMode: TabBarMode | null = null;
 
 /**
- * Resolved on EVERY call — deliberately NOT memoized.
+ * Resolved lazily on first use (memoized) instead of at module-eval time —
+ * keeps the expo-glass-effect native call OFF the cold-start module-load path.
  *
- * The previous one-shot cache latched whatever `isLiquidGlassAvailable()` happened
- * to return on the very first call. If that call landed before expo-glass-effect's
- * native module was ready it answered `false`, pinning an iOS 26 device to 'blur'
- * for the whole session. That mattered beyond looks: `tabBarStyle` (in
- * app/(tabs)/_layout.tsx) and `useTabBarPadding()` (via components/ui/Screen) read
- * the mode at DIFFERENT moments, so a mid-boot flip made them disagree about the
- * bar's height and the content padding beneath it.
- *
- * The __DEV__ log prints the raw availability once and again on any change — if it
- * ever flips false → true after boot, the latching theory is confirmed.
+ * The memoization is safe: `isLiquidGlassAvailable` is a native Constant
+ * (expo-glass-effect ios/GlassEffectModule.swift), fixed at module registration
+ * from the compiler version, `#available(iOS 26)` and Info.plist — it cannot
+ * change while the app runs, and expo-glass-effect memoizes it in JS as well.
+ * (This cache was briefly removed on a theory that a "not ready yet" first call
+ * could latch the wrong value and desync `tabBarStyle` from `useTabBarPadding()`.
+ * That is not possible for a Constant, and it was not related to the white-screen
+ * bug — the cause was the tab-scene fade animation.)
  */
 export function getTabBarMode(): TabBarMode {
-  if (Platform.OS !== 'ios') return 'solid';
-  const glass = isLiquidGlassAvailable();
-  if (__DEV__ && glass !== lastLoggedGlass) {
-    lastLoggedGlass = glass;
-    console.log('[tabBarMode] isLiquidGlassAvailable() =', glass, '→', glass ? 'glass' : 'blur');
+  if (cachedMode === null) {
+    cachedMode = Platform.OS === 'ios' ? (isLiquidGlassAvailable() ? 'glass' : 'blur') : 'solid';
   }
-  return glass ? 'glass' : 'blur';
+  return cachedMode;
 }
 
 /** Bar content height, excluding the bottom safe-area inset. */

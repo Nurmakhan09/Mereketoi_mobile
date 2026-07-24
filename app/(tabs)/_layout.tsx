@@ -49,9 +49,11 @@ export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary
 // (route.key): a single shared timestamp let a pop on tab A silently swallow a
 // legitimate repress-pop on tab B within the same window.
 //
-// 600ms, not 400: it has to outlast the iOS cross-fade between tab scenes
-// (screenOptions.animation === 'fade'), which is the exact window in which a
-// second press used to land a popToTop on a half-transitioned stack.
+// 600ms was originally picked to outlast the iOS tab cross-fade. That fade is gone
+// (see screenOptions.animation below), so the window is now just a plain
+// double-tap guard for the popToTop race from d03c861. Kept as-is because the app
+// is verified stable on these values — it could be relaxed, at the cost of
+// re-testing navigation.
 const POP_DEBOUNCE_MS = 600;
 const lastPopAt = new Map<string, number>();
 
@@ -187,17 +189,16 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // HYPOTHESIS A TEST (owner-approved 2026-07-24). Was:
+        // DO NOT reintroduce a tab-scene animation here. This was
         //   animation: tabBarMode === 'solid' ? 'none' : 'fade'
-        // i.e. an iOS-only cross-fade between tab scenes; Android always ran 'none'
-        // and has never shown the bug. The owner's screenshots show a fully working
-        // tab BAR above a blank white content area — and the bar lives OUTSIDE the
-        // animated scene container. That is the signature of an incoming scene left
-        // detached / at opacity 0 when a rapid double-tap interrupts an in-flight
-        // fade: the navigator is alive, the bar repaints, the screen never presents.
-        // The fade is cosmetic, not a feature, so forcing 'none' is a fix rather
-        // than a mask IF it is the cause. If the white screen survives this, the
-        // cause is elsewhere and the fade can come back.
+        // — an iOS-only cross-fade — and that fade was the CONFIRMED cause of the
+        // white-screen bug (owner-verified fixed 2026-07-24): a rapid double-tap
+        // interrupted an in-flight fade and left the incoming scene detached, so
+        // the screen never presented. The tab BAR lives outside the animated scene
+        // container, which is why it kept rendering perfectly above a blank white
+        // page — the exact signature in the owner's screenshots. Android always ran
+        // 'none' and never once showed the bug.
+        // The animation was purely cosmetic, so 'none' costs nothing.
         animation: 'none',
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
